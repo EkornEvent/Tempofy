@@ -61,6 +61,10 @@ export default class App extends React.Component {
   _handleFinishLoading = () => {
     this.setState({ isLoadingComplete: true });
   };
+
+  componentWillUnmount() {
+    console.log('componentWillUnmount');
+  }
 }
 
 const styles = StyleSheet.create({

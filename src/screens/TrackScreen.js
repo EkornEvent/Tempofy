@@ -13,6 +13,9 @@ import actionTypes from '../constants'
 const styles = StyleSheet.create({
   container: {
     flex: 1
+  },
+  shuffle: {
+    height: 80
   }
 });
 
@@ -26,7 +29,7 @@ const TrackScreen = ({tracks, filteredTracks, error, onPress, onPressShuffle, on
     {filteredTracks &&
       <View>
         <TempoFilter tracks={tracks} onFilterTracks={(value) => filterTracks(tracks, value)}/>
-        <Button title="Play Shuffle" onPress={() => onPressShuffle(filteredTracks)}/>
+        <Button title="Play Shuffle" buttonStyle={styles.shuffle} onPress={() => onPressShuffle(filteredTracks)}/>
       </View>
     }
     <ScrollView>
@@ -34,8 +37,9 @@ const TrackScreen = ({tracks, filteredTracks, error, onPress, onPressShuffle, on
         filteredTracks.map((item, i) => (
           <ListItem
             key={i}
-            onPress={() => onPress(item)}
+            onPress={() => onPress(item, i)}
             title={item.track.name}
+            subtitle={item.track.artists[0].name}
             leftIcon={item.isPlaying ? <PlatformIcon size={26} shortName={'musical-notes'} style={styles.rightIcon}/> : null}
             badge={item.tempo ? { value: parseInt(item.tempo) } : null}
           />
@@ -55,14 +59,15 @@ export default compose(
     player: player.playerState
   })),
   withHandlers({
-    onPress: ({spotify, navigation}) => (item) => {
-      spotify.playTrack(item.track.uri)
-      navigation.navigate('Fullscreen')
+    onPress: props => (item, index) => {
+      props.dispatch({ type: actionTypes.SET, path: 'currentTrackIndex', data: index })
+      props.spotify.playTrack(props.filteredTracks[index].track.uri)
+      props.navigation.navigate('Fullscreen')
     },
-    onPressShuffle: ({spotify, navigation}) => (filteredTracks) => {
+    onPressShuffle: props => (filteredTracks) => {
       const shuffledArray = shuffleArray(filteredTracks)
-      spotify.playTrack(shuffledArray[0].track.uri)
-      navigation.navigate('Fullscreen')
+      props.spotify.playTrack(shuffledArray[0].track.uri)
+      props.navigation.navigate('Fullscreen')
     },
     onPressNowPlaying: ({navigation}) => () => {
       navigation.navigate('Fullscreen')

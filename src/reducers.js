@@ -52,7 +52,8 @@ export const spotifyReducer = (state = {connecting: false}, action) => {
         ...state,
         connecting: false,
         connected: true,
-        accessToken: action.accessToken
+        accessToken: action.accessToken,
+        error: null
       }
     case actionTypes.DISCONNECT:
       return {
@@ -71,8 +72,23 @@ export const spotifyReducer = (state = {connecting: false}, action) => {
       return state
   }
 }
-export const playerReducer = (state = {}, action) => {
-  console.log(action);
+
+const initialPlayerState = {
+  autoSkipPauseTime: 2000,
+  autoSkipFadeTime: 2000,
+  autoSkipMode: 2,
+  autoSkipTime: 10000,
+  autoSkipTimeLeftPosition: 0,
+  playerState: {
+    uri: null,
+    duration: 0,
+    name: 'Track name ',
+    artistName: 'Artist name ',
+    paused: true,
+    playbackPosition: 0
+  }
+}
+export const playerReducer = (state = initialPlayerState, action) => {
   switch (action.type) {
     case actionTypes.TEMPO_SELECTED:
       return {
@@ -84,10 +100,29 @@ export const playerReducer = (state = {}, action) => {
         ...state,
         playerState: action.state
       }
-    case actionTypes.AUTO_SKIP_TIME_LEFT:
+    case actionTypes.UPDATE_TIME_LEFT_POSITION:
       return {
         ...state,
-        autoSkipTimeLeft: action.value
+        autoSkipTimeLeftPosition: action.value
+      }
+    case actionTypes.TOGGLE_SKIP_MODE:
+      var newValue = state.autoSkipMode + 1
+      return {
+        ...state,
+        autoSkipMode: newValue > 2 ? 0 : newValue
+      }
+    case actionTypes.TOGGLE_SKIP_TIME:
+      const increment = 15000
+      var value = state.autoSkipTime + increment;
+      var position = state.autoSkipTimeLeftPosition + increment
+      if(value > 90000) {
+        value = increment
+        position = state.playerState.playbackPosition + increment
+      }
+      return {
+        ...state,
+        autoSkipTime: value,
+        autoSkipTimeLeftPosition: position
       }
     default:
       return state
