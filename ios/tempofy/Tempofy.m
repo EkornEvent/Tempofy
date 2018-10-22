@@ -18,6 +18,8 @@ static NSString * const kTokenRefreshServiceURL = @"https://us-central1-organic-
 @implementation Tempofy
 
 + (id)alloc {
+    [UIApplication sharedApplication].idleTimerDisabled = YES;
+    
     static Tempofy *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -56,7 +58,6 @@ RCT_EXPORT_MODULE();
     self.sessionManager = [SPTSessionManager sessionManagerWithConfiguration:configuration delegate:self];
     
     self.appRemote = [[SPTAppRemote alloc] initWithConfiguration:configuration logLevel:SPTAppRemoteLogLevelDebug];
-    
 }
 
 RCT_EXPORT_METHOD(login)
@@ -134,7 +135,9 @@ RCT_EXPORT_METHOD(login)
 }
 
 - (void)playerStateDidChange:(nonnull id<SPTAppRemotePlayerState>)playerState {
-    printf("\nplayerStateDidChange");
+    if(playerState.track.artist.name == NULL)
+        return;
+    
     [self sendEventWithName:@"playerStateDidChange" body:@{
         @"uri":playerState.track.URI,
         @"duration":@(playerState.track.duration),
@@ -182,6 +185,39 @@ RCT_EXPORT_METHOD(resume)
 RCT_EXPORT_METHOD(skipToNext)
 {
     [self.appRemote.playerAPI skipToNext:^(id  _Nullable result, NSError * _Nullable error) {
+    }];
+};
+
+RCT_EXPORT_METHOD(updatePlayerState)
+{
+    [self.appRemote.playerAPI getPlayerState:^(id  _Nullable result, NSError * _Nullable error) {
+        [self playerStateDidChange:result];
+    }];
+};
+
+
+RCT_REMAP_METHOD(enqueueTrackUri,
+                 uri:(NSString *)uri
+                 enqueueTrackUriWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    printf("\nenqueueTrackUri: %s", [uri UTF8String]);
+    [self.appRemote.playerAPI enqueueTrackUri:uri callback:^(id  _Nullable result, NSError * _Nullable error) {
+        
+        if(error) {
+            reject(@"enqueueTrackUri", [error localizedDescription], error);
+        }
+        else {
+            resolve(result);
+        }
+    }];
+}
+
+
+RCT_EXPORT_METHOD(seekToPosition:(NSInteger *)position)
+{
+    [self.appRemote.playerAPI seekToPosition:position callback:^(id  _Nullable result, NSError * _Nullable error) {
+        
     }];
 };
 
