@@ -4,12 +4,16 @@ const spotifyEmitter = new NativeEventEmitter(Tempofy);
 
 import SpotifyWebApi from 'spotify-web-api-js'
 import actionTypes from '../constants'
+import Data from './Data'
+import PlayBlockHandler from './PlayBlocks'
 
 class Spotify {
   constructor() {
     this.subscriptions = []
     this.namespace = "@@spotify"
     this.webApi = new SpotifyWebApi()
+    this.playBlockHandler = new PlayBlockHandler(this)
+    this.data = new Data(this)
   }
 
   initializeApp() {
@@ -69,6 +73,7 @@ class Spotify {
     this.webApi.setAccessToken(accessToken);
     this.store.dispatch({ type: actionTypes.CONNECT, accessToken })
     AsyncStorage.setItem('accessToken', accessToken)
+    this.resetPlayer()
   }
 
   playerStateDidChange(state) {
@@ -76,181 +81,87 @@ class Spotify {
       ...state,
       paused: state.paused === 'true'
     }
-    const autoSkipPauseTime = this.store.getState().player.autoSkipPauseTime
-    const autoSkipFadeTime = this.store.getState().player.autoSkipFadeTime
-    const autoSkipMode = this.store.getState().player.autoSkipMode
-    const autoSkipTime = this.store.getState().player.autoSkipTime
-    var autoSkipTimeLeftPosition = this.store.getState().player.autoSkipTimeLeftPosition
-    if(autoSkipTimeLeftPosition == 0) {
-      this.store.dispatch({ type: actionTypes.UPDATE_TIME_LEFT_POSITION, value: autoSkipTime })
-      autoSkipTimeLeftPosition = autoSkipTime
-    }
-    const playTimeLeft = autoSkipTimeLeftPosition - state.playbackPosition
-    if(!state.paused) {
-      if(autoSkipMode > 0) {
-        if(playTimeLeft <= autoSkipFadeTime) {
-          if(!this.isFading) {
-            this.fadeWithAction(() => {
-              if(autoSkipMode == 1) {
-                this.skipToNext()
-              } else {
-                autoSkipTimeLeftPosition = state.playbackPosition + autoSkipTime + autoSkipPauseTime + 1
-                this.store.dispatch({ type: actionTypes.UPDATE_TIME_LEFT_POSITION, value: autoSkipTimeLeftPosition })
-              }
-            })
-          }
-        }
-      } else {
-        if(playTimeLeft <= 0) {
-          autoSkipTimeLeftPosition = state.playbackPosition + autoSkipTime
-          this.store.dispatch({ type: actionTypes.UPDATE_TIME_LEFT_POSITION, value: autoSkipTimeLeftPosition })
-        }
-      }
-    }
     this.store.dispatch({ type: actionTypes.PLAYER_STATE_DID_CHANGE, state })
+
+    const playerState = this.store.getState().player
+
+    // Blocks position update
+    this.playBlockHandler.playerStateDidChange(state, playerState)
   }
 
   getUserPlaylists() {
-    this.store.dispatch({ type: actionTypes.START, path: 'playlists' })
-    const limit = 50
-    this.webApi.getUserPlaylists({limit: 1})
-    .then(data => {
-      return data.total
-    })
-    .then(total => {
-      var requests = []
-      const numRequests = Math.ceil(total/limit)
-      var count = 0
-      do {
-        requests.push(
-          this.webApi.getUserPlaylists({
-            offset: count*limit,
-            limit: limit
-          })
-        )
-        count++
-      } while (count < numRequests)
-      return Promise.all(requests)
-    })
-    .then(responses => {
-      return responses.map(data => data.items).flat()
-    })
-    .then(data => {
-      this.store.dispatch({ type: actionTypes.SET, path: 'playlists', data })
-    })
-    .catch(error => {
-      this.store.dispatch({ type: actionTypes.SET, path: 'playlists', data: [] })
-      const message = JSON.parse(error.responseText).error.message
-      this.store.dispatch({ type: actionTypes.ERROR, error:message })
-    })
+    return this.data.getUserPlaylists()
   }
 
   getPlaylistTracks(playlistId) {
-    this.store.dispatch({ type: actionTypes.START, path: 'tracks' })
-    this.store.dispatch({ type: actionTypes.START, path: 'filteredTracks' })
-    const limit = 100
-    this.webApi.getPlaylistTracks(playlistId, {limit: 1})
-    .then(data => {
-      return data.total
-    })
-    .then(total => {
-      var requests = []
-      const numRequests = Math.ceil(total/limit)
-      var count = 0
-      do {
-        requests.push(
-          this.webApi.getPlaylistTracks(playlistId, {
-            offset: count*limit,
-            limit: limit
-          })
-          .then(data => {
-            const idList = data.items.map(item => item.track.id)
-            const idListString = idList.join(',')
-            return this.webApi.getAudioFeaturesForTracks(idListString)
-            .then(audioData => {
-              const newItems = data.items.map((item, index) => {
-                const tempo = audioData.audio_features[index] ? audioData.audio_features[index].tempo : null
-                return {
-                  ...item,
-                  tempo
-                }
-              })
-              data.items = newItems
-              return data
-            })
-          })
-        )
-        count++
-      } while (count < numRequests)
-      return Promise.all(requests)
-    })
-    .then(responses => {
-      return responses.map(data => data.items).flat()
-    })
-    .then(data => {
-      this.store.dispatch({ type: actionTypes.SET, path: 'tracks', data })
-      this.store.dispatch({ type: actionTypes.SET, path: 'filteredTracks', data })
-    })
-    .catch(error => {
-      this.store.dispatch({ type: actionTypes.SET, path: 'tracks', data: [] })
-      this.store.dispatch({ type: actionTypes.SET, path: 'filteredTracks', data: [] })
-      const message = JSON.parse(error.responseText).error.message
-      this.store.dispatch({ type: actionTypes.ERROR, error:message })
-    })
+    return this.data.getPlaylistTracks(playlistId)
   }
 
-  playTrack(uri) {
+  setupPlayBlocks(state, blockDuration) {
+    return this.playBlockHandler.setupPlayBlocks(state, blockDuration)
+  }
+
+  getAllBlocks() {
+    return this.playBlockHandler.getAllBlocks()
+  }
+
+  playBlock(block) {
+    this.playBlockHandler.playBlock(block)
+  }
+
+  playTrack(uri, index) {
+    console.log('playTrack');
+    this.store.dispatch({ type: actionTypes.SET, path: 'currentTrackIndex', data: index })
+    this.resetPlayer()
     Tempofy.play(uri)
-    this.restoreVolume()
   }
 
   playQueueIndex(index) {
+    console.log('playQueueIndex');
     const filteredTracks = this.store.getState().data.filteredTracks
     if(index >= 0 && index < filteredTracks.length ) {
       this.store.dispatch({ type: actionTypes.SET, path: 'currentTrackIndex', data: index })
       Tempofy.play(filteredTracks[index].track.uri)
+      this.resetTimeLeft()
     }
   }
 
   pause() {
     Tempofy.pause()
+    const isFading = this.store.getState().data.isFading
+    if(isFading) {
+      this.resetFadeTimer()
+      this.restoreVolume()
+    }
   }
 
   resume() {
     Tempofy.resume()
   }
 
-  resetTimeLeft() {
-    const autoSkipTime = this.store.getState().player.autoSkipTime
-    this.store.dispatch({ type: actionTypes.UPDATE_TIME_LEFT_POSITION, value: autoSkipTime })
-  }
-
   canSkipPrevious() {
     const currentTrackIndex = this.store.getState().data.currentTrackIndex
     const filteredTracks = this.store.getState().data.filteredTracks
     const tryIndex = currentTrackIndex - 1
-    return tryIndex >= 0 && filteredTracks.length
+    return tryIndex >= 0 && filteredTracks && filteredTracks.length
   }
 
   canSkipNext() {
     const currentTrackIndex = this.store.getState().data.currentTrackIndex
     const filteredTracks = this.store.getState().data.filteredTracks
     const tryIndex = currentTrackIndex + 1
-    return tryIndex < filteredTracks.length
+    return filteredTracks && tryIndex < filteredTracks.length
   }
 
   skipToPrevious() {
     const currentTrackIndex = this.store.getState().data.currentTrackIndex
     this.playQueueIndex(currentTrackIndex - 1)
-    this.resetTimeLeft()
-    this.restoreVolume()
   }
 
   skipToNext() {
+    console.log('skipToNext');
     const currentTrackIndex = this.store.getState().data.currentTrackIndex
     this.playQueueIndex(currentTrackIndex + 1)
-    this.resetTimeLeft()
-    this.restoreVolume()
   }
 
   seekToPosition(position) {
@@ -260,40 +171,92 @@ class Spotify {
     Tempofy.seekToPosition(position)
   }
 
+
+  resetPlayer() {
+    console.log('resetPlayer');
+    // TODO: Get volume from device
+    //this.webApi.getMyCurrentPlaybackState().then(result => {
+      this.store.dispatch({ type: actionTypes.SET, path: 'currentVolume', data: 100/*result.device.volume_percent*/ })
+    //})
+    this.resetTimeLeft()
+    this.resetFadeTimer()
+    this.restoreVolume()
+  }
+
+  resetTimeLeft() {
+    console.log('resetTimeLeft');
+    this.store.dispatch({ type: actionTypes.UPDATE_TIME_LEFT_POSITION, value: null })
+  }
+
+  resetFadeTimer() {
+    console.log('resetFadeTimer');
+    if(this.fadeTimer) {
+      clearInterval(this.fadeTimer)
+    }
+    this.store.dispatch({ type: actionTypes.SET, path: 'isFading', data: false })
+  }
+
   restoreVolume() {
-    const targetVolume = this.currentVolume ? this.currentVolume : 100
+    console.log('restoreVolume');
+    const currentVolume = this.store.getState().data.currentVolume
+    const targetVolume = Number.isInteger(currentVolume) ? currentVolume : 100
     this.webApi.setVolume(targetVolume, {})
   }
 
   fadeWithAction(callback) {
-    this.webApi.getMyCurrentPlaybackState().then(result => {
-      this.currentVolume = result.device.volume_percent
-      this.isFading = true
-      this.fadeTarget(this.currentVolume, 0).then(() => {
-        callback()
-        return
-      }).then(() => {
-        this.pause()
-        return new Promise((resolve) => setTimeout(resolve, 2000))
-      }).then(() => {
-        this.resume()
-        return this.fadeTarget(0, this.currentVolume)
-      }).then(() => {
-        this.isFading = false
-      })
+    console.log('fadeWithAction');
+    const currentVolume = this.store.getState().data.currentVolume
+    const autoSkipPauseTime = this.store.getState().player.autoSkipPauseTime
+    this.store.dispatch({ type: actionTypes.SET, path: 'isFading', data: true })
+    this.fadeTarget(currentVolume, 0).then(() => {
+      console.log('pause time: '+autoSkipPauseTime);
+      Tempofy.pause()
+      return new Promise((resolve) => setTimeout(resolve, autoSkipPauseTime))
+    }).then(() => {
+      console.log('resume fade');
+      Tempofy.resume()
+      callback()
+      return
+    }).then(() => {
+      return this.fadeTarget(0, currentVolume)
+    }).then(() => {
+      this.store.dispatch({ type: actionTypes.SET, path: 'isFading', data: false })
     })
   }
 
   fadeTarget(from, to) {
     return new Promise(resolve => {
-      setTimeout(() => {
-        const partVolume = Math.abs((to-from)/2)
-        this.webApi.setVolume(partVolume, {})
-      }, 1000)
-      setTimeout(() => {
-        this.webApi.setVolume(to, {})
-        resolve()
-      }, 2000)
+      var current = from
+      const step = Math.abs((to-from)/10)
+      const autoSkipFadeTime = this.store.getState().player.autoSkipFadeTime
+      const interval = autoSkipFadeTime / 10
+
+      if(this.fadeTimer) {
+        clearInterval(this.fadeTimer)
+      }
+
+      this.fadeTimer = setInterval(() => {
+        console.log('fade volume: '+current);
+        if(to == 0) {
+          current -= step
+          if(current > to) {
+            this.webApi.setVolume(current, {})
+          } else {
+            this.webApi.setVolume(to, {})
+            clearInterval(this.fadeTimer);
+            resolve()
+          }
+        } else {
+          current += step
+          if(current < to) {
+            this.webApi.setVolume(current, {})
+    			} else {
+            this.webApi.setVolume(to, {})
+            clearInterval(this.fadeTimer);
+            resolve()
+    			}
+        }
+      }, interval)
     })
   }
 
