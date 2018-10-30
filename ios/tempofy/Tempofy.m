@@ -213,11 +213,20 @@ RCT_REMAP_METHOD(enqueueTrackUri,
     }];
 }
 
-
-RCT_EXPORT_METHOD(seekToPosition:(NSInteger *)position)
+RCT_REMAP_METHOD(seekToPosition,
+                 position:(NSInteger *)position
+                 seekToPositionWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
 {
+    printf("\nseekToPosition: %ld", position);
     [self.appRemote.playerAPI seekToPosition:position callback:^(id  _Nullable result, NSError * _Nullable error) {
         
+        if(error) {
+            reject(@"seekToPosition", [error localizedDescription], error);
+        }
+        else {
+            resolve(result);
+        }
     }];
 };
 

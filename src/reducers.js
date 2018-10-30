@@ -74,11 +74,11 @@ export const spotifyReducer = (state = {connecting: false}, action) => {
 }
 
 const initialPlayerState = {
-  autoSkipPauseTime: 2000,
-  autoSkipFadeTime: 2000,
+  autoSkipPauseTime: 1000,
+  autoSkipFadeTime: 3000,
   autoSkipMode: 2,
-  autoSkipTime: 10000,
-  autoSkipTimeLeftPosition: 0,
+  autoSkipTime: 30000,
+  autoSkipTimeLeftPosition: null,
   playerState: {
     uri: null,
     duration: 0,

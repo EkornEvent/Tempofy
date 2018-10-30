@@ -61,12 +61,13 @@ export default compose(
   withHandlers({
     onPress: props => (item, index) => {
       props.dispatch({ type: actionTypes.SET, path: 'currentTrackIndex', data: index })
-      props.spotify.playTrack(props.filteredTracks[index].track.uri)
+      props.spotify.playTrack(props.filteredTracks[index].track.uri, index)
       props.navigation.navigate('Fullscreen')
     },
     onPressShuffle: props => (filteredTracks) => {
       const shuffledArray = shuffleArray(filteredTracks)
-      props.spotify.playTrack(shuffledArray[0].track.uri)
+      props.dispatch({ type: actionTypes.SET, path: 'filteredTracks', data: shuffledArray })
+      props.spotify.playTrack(shuffledArray[0].track.uri, 0)
       props.navigation.navigate('Fullscreen')
     },
     onPressNowPlaying: ({navigation}) => () => {
