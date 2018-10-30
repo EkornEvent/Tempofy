@@ -1,0 +1,227 @@
+# Customise this file, documentation can be found here:
+# https://github.com/fastlane/fastlane/tree/master/docs
+# All available actions: https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Actions.md
+# can also be listed using the `fastlane actions` command
+
+# Change the syntax highlighting to Ruby
+# All lines starting with a # are ignored when running `fastlane`
+
+# If you want to automatically update fastlane if a new version is available:
+update_fastlane
+
+# This is the minimum version number required.
+# Update this, if you use features of a newer version
+
+default_platform :ios
+
+platform :ios do
+  before_all do
+    ENV["SLACK_URL"] = "https://hooks.slack.com/services/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"
+    @username = "johan.ekorn@gmail.com"
+  end
+
+  desc "Increment"
+  lane :increment do
+    # Automatically increment patch version number.
+    currentVersion = get_version_number(xcodeproj: "./ios/tempofy.xcodeproj")
+    version = prompt(text: "Version number (" + currentVersion + "): ")
+
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "./ios/tempofy.xcodeproj"
+    )
+
+    slack(
+      message: "Incremented build version",
+      payload: {            # Optional, lets you specify any number of your own Slack attachments.
+        'Build Date' => Time.new.to_s
+      },
+      default_payloads: [:git_branch, :git_author], # Optional, lets you specify a whitelist of default payloads to include. Pass an empty array to suppress all the default payloads. Don't add this key, or pass nil, if you want all the default payloads. The available default payloads are: `lane`, `test_result`, `git_branch`, `git_author`, `last_git_commit`.
+    )
+  end
+
+  desc "Tests Slack"
+  lane :test_slack do
+    # snapshot
+    slack(
+      message: "You can post to Slack!",
+      channel: "#general",  # Optional, by default will post to the default channel configured for the POST URL.
+      payload: {            # Optional, lets you specify any number of your own Slack attachments.
+        'Build Date' => Time.new.to_s
+      },
+      default_payloads: [:git_branch, :git_author], # Optional, lets you specify a whitelist of default payloads to include. Pass an empty array to suppress all the default payloads. Don't add this key, or pass nil, if you want all the default payloads. The available default payloads are: `lane`, `test_result`, `git_branch`, `git_author`, `last_git_commit`.
+    )
+  end
+
+  desc "Runs all the tests"
+  lane :test do
+    scan
+  end
+
+  desc "Submit a new Beta Build to Apple TestFlight"
+  desc "This will also make sure the profile is up to date"
+  lane :beta do
+    # UI.important "Important Message"
+    # UI.error "O NO!"
+    # UI.message "Basic blah"
+    answer = UI.select("Would you like to add a Changelog?", ["Yes", "No"])
+    changelog = ask('Type Changelog message:') if answer == "Yes"
+
+    # Do application testing here
+    # Very personal process
+
+    # always get latest certificates/provisioning profiles
+    match(type: 'appstore')
+
+    # Change build number
+    increment_build_number(
+      xcodeproj: "./ios/tempofy.xcodeproj"
+    )
+
+    gym(
+      scheme: "",
+      # project: "./ios/tempofy.xcodeproj"
+      # hypothetically could be a workspace
+      # especially if you bring in pods!
+      workspace: "./ios/tempofy.xcworkspace"
+    )
+
+    # Sometimes itunes email is different!
+    if changelog
+      pilot(username: @username)
+    else
+      pilot(username: @username, changelog: changelog)
+    end
+
+    # Print reminder of testers
+    sh "pilot list -u #{@username}"
+
+  end
+
+  # You can define as many lanes as you want
+
+  after_all do |lane|
+    # This block is called, only if the executed lane was successful
+
+    slack(
+      message: "App successfully released",
+      channel: "#general"
+    )
+  end
+
+  error do |lane, exception|
+    slack(
+      message: exception.message,
+      success: false
+    )
+  end
+
+  desc "Push production version to App Store"
+  desc "This will also make sure the profile is up to date"
+  lane :deploy do
+
+    # always get latest certificates/provisioning profiles
+    match(type: 'appstore')
+
+    # Change build number
+    increment_build_number(
+      xcodeproj: "./ios/tempofy.xcodeproj"
+    )
+
+    gym(
+      scheme: "tempofy",
+      workspace: "./ios/tempofy.xcworkspace"
+    )
+
+    # Deliver to store
+    deliver()
+
+  end
+
+  # You can define as many lanes as you want
+
+  after_all do |lane|
+    # This block is called, only if the executed lane was successful
+
+    slack(
+      message: "New version sent to App Store"
+    )
+  end
+
+  error do |lane, exception|
+    slack(
+      message: exception.message,
+      success: false
+    )
+  end
+end
+
+platform :android do
+  before_all do
+    ENV["SLACK_URL"] = "https://hooks.slack.com/services/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"
+  end
+
+  desc "Tests Slack"
+  lane :test_slack do
+    # snapshot
+    slack(
+      message: "You can post to Slack!",
+      channel: "#general",  # Optional, by default will post to the default channel configured for the POST URL.
+      payload: {            # Optional, lets you specify any number of your own Slack attachments.
+        'Build Date' => Time.new.to_s
+      },
+      default_payloads: [:git_branch, :git_author], # Optional, lets you specify a whitelist of default payloads to include. Pass an empty array to suppress all the default payloads. Don't add this key, or pass nil, if you want all the default payloads. The available default payloads are: `lane`, `test_result`, `git_branch`, `git_author`, `last_git_commit`.
+    )
+  end
+
+  desc "Submit a new Alpha Build to Google Play Store"
+  lane :beta do
+
+    # Manually update AndroidManifest.xml version code
+    # Manually update build.gradle version code
+
+    # Clean project
+    gradle(
+      task: 'clean',
+      project_dir: "android/"
+    )
+
+    # Build the release version of the Android App
+    gradle(
+      task: "assemble",
+      build_type: "Release",
+      project_dir: "android/"
+    )
+
+    # Uploads generated apk to Google Play Store as an Beta build
+    supply(
+      track: "beta",
+      apk: "android/app/build/outputs/apk/release/app-release.apk"
+    )
+
+  end
+
+  # You can define as many lanes as you want
+
+  after_all do |lane|
+    # This block is called, only if the executed lane was successful
+
+    slack(
+      message: "App successfully released",
+      channel: "#general"
+    )
+  end
+
+  error do |lane, exception|
+    slack(
+      message: exception.message,
+      success: false
+    )
+  end
+end
+
+# More information about multiple platforms in fastlane: https://github.com/fastlane/fastlane/blob/master/docs/Platforms.md
+# All available actions: https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Actions.md
+
+# fastlane reports which actions are used
+# No personal data is recorded. Learn more at https://github.com/fastlane/enhancer

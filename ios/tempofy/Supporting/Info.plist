@@ -17,26 +17,20 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>3.0</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>exp4b30b5fbfb0a4a15901c785668175521</string>
-			</array>
-		</dict>
-		<dict>
 			<key>CFBundleURLName</key>
-			<string>OAuthRedirect</string>
+			<string>com.ekorn.Tempofy-auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.ekorn.Tempofy</string>
+				<string>tempofy-login</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>72</string>
 	<key>Fabric</key>
 	<dict>
 		<key>APIKey</key>
@@ -51,6 +45,10 @@
 			</dict>
 		</array>
 	</dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>spotify</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -93,20 +91,6 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-	  <string>spotify</string>
-	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-	  <dict>
-	    <key>CFBundleURLName</key>
-	    <string>com.ekorn.Tempofy-auth</string>
-	    <key>CFBundleURLSchemes</key>
-	    <array>
-	      <string>tempofy-login</string>
-	    </array>
-	  </dict>
-	</array>
+	<key>ITSAppUsesNonExemptEncryption</key><false/>
 </dict>
 </plist>

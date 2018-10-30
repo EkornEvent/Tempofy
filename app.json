@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tempofy",
-    "description": "A very interesting project.",
+    "description": "Keep all your best tracks in one big playlist and let Tempofy filter out those you want by tempo",
     "slug": "tempofy",
     "privacy": "public",
     "sdkVersion": "30.0.0",
@@ -9,7 +9,7 @@
       "ios",
       "android"
     ],
-    "version": "1.0.0",
+    "version": "3.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
     "splash": {
@@ -26,6 +26,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ekorn.Tempofy",
+      "buildNumber": "71",
       "publishBundlePath": "ios/tempofy/Supporting/shell-app.bundle",
       "publishManifestPath": "ios/tempofy/Supporting/shell-app-manifest.json"
     },
@@ -37,8 +38,10 @@
     "scheme": "exp4b30b5fbfb0a4a15901c785668175521",
     "android": {
       "package": "com.tempofy",
+      "versionCode": 9,
       "publishBundlePath": "android/app/src/main/assets/shell-app.bundle",
       "publishManifestPath": "android/app/src/main/assets/shell-app-manifest.json"
-    }
+    },
+    "githubUrl": "https://github.com/EkornEvent/Tempofy"
   }
 }
