@@ -54,6 +54,10 @@
     android:largeHeap="true">
 
     <activity
+      android:name="com.spotify.sdk.android.authentication.LoginActivity"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+    <activity
       android:name=".LauncherActivity"
       android:exported="true"
       android:launchMode="singleTask"

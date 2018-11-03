@@ -2,8 +2,8 @@
   "expoServerPort": 19000,
   "expoServerNgrokUrl": "https://t9-pzr.johra.tempofy.exp.direct",
   "packagerNgrokUrl": "https://packager.t9-pzr.johra.tempofy.exp.direct",
-  "ngrokPid": 1255,
+  "ngrokPid": 78306,
   "packagerPort": 19001,
-  "packagerPid": 1237,
+  "packagerPid": 78257,
   "devToolsPort": 19002
 }

@@ -23,6 +23,7 @@ public class MainApplication extends ExpoApplication {
     return Arrays.<ReactPackage>asList(
         // Add your own packages here!
         // TODO: add native modules!
+        new TempofyPackage()
 
         // Needed for `react-native link`
         // new MainReactPackage()

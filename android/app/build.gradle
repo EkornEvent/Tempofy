@@ -22,8 +22,8 @@ android {
   defaultConfig {
     applicationId 'com.tempofy'
     targetSdkVersion 26
-    versionCode 1
-    versionName '1.0.0'
+    versionCode 9
+    versionName '1.0'
     ndk {
       abiFilters 'armeabi-v7a', 'x86'
     }
@@ -103,6 +103,10 @@ dependencies {
 
   implementation 'com.android.support:multidex:1.0.1'
 
+  implementation project(':spotify-app-remote')
+  implementation 'com.spotify.android:auth:1.1.0'
+  implementation "com.google.code.gson:gson:2.6.1"
+
   // Our dependencies
   implementation 'com.android.support:appcompat-v7:27.1.1'
 
@@ -170,13 +174,13 @@ dependencies {
   testImplementation 'com.android.support.test:runner:1.0.2-alpha1'
   testImplementation 'com.android.support.test:rules:1.0.2-alpha1'
 
-  
+
   implementation('host.exp.exponent:expoview:30.0.0@aar') {
     transitive = true
     exclude group: 'com.squareup.okhttp3', module: 'okhttp'
     exclude group: 'com.squareup.okhttp3', module: 'okhttp-urlconnection'
   }
-  
+
   /* REMOVED_WHEN_DISTRIBUTING_FROM_HERE
   implementation(project(path: ':expoview')) {
     // Excluding okhttp3 included by expo-file-system
