@@ -14,12 +14,6 @@ const styles = StyleSheet.create({
 
 const PlaylistScreen = ({playlists, error, onPress, onRefresh}) => (
   <SafeAreaView style={styles.container}>
-    {error &&
-      <View>
-        <Text h4>{error}</Text>
-        <Button title='Refresh' onPress={() => onRefresh()}/>
-      </View>
-    }
     <ScrollView>
     {
       playlists.map((item, i) => (
@@ -38,8 +32,7 @@ const PlaylistScreen = ({playlists, error, onPress, onRefresh}) => (
 export default compose(
   withSpotify,
   connect(({spotify, data}) => ({
-    playlists: data.playlists,
-    error: spotify.error
+    playlists: data.playlists
   })),
   withHandlers({
     onPress: ({navigation}) => (item) => {

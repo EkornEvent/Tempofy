@@ -4,6 +4,7 @@ import { AppLoading, Asset, Font, Icon } from 'expo';
 import { Provider } from 'react-redux';
 import Spotify from './src/api/Spotify'
 
+import ConnectionBar from './src/components/ConnectionBar'
 import AppNavigator from './src/navigation/AppNavigator';
 
 import configureStore from './src/store'
@@ -29,6 +30,7 @@ export default class App extends React.Component {
           <View style={styles.container}>
             {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
             <AppNavigator />
+            <ConnectionBar />
           </View>
         </Provider>
       );

@@ -168,6 +168,11 @@ RCT_EXPORT_METHOD(play:(NSString *)uri)
     }];
 };
 
+RCT_EXPORT_METHOD(authorizeAndPlayURI:(NSString *)uri)
+{
+    [self.appRemote authorizeAndPlayURI:uri];
+};
+
 RCT_EXPORT_METHOD(pause)
 {
     [self.appRemote.playerAPI pause:^(id  _Nullable result, NSError * _Nullable error) {

@@ -65,7 +65,9 @@ class Spotify {
       clearInterval(this.stateTimer);
     }
     this.stateTimer = setInterval(() =>{
-      Tempofy.updatePlayerState()
+      if(this.store.getState().spotify.connected) {
+        Tempofy.updatePlayerState()
+      }
     },100)
   }
 
@@ -107,6 +109,13 @@ class Spotify {
 
   playBlock(block) {
     this.playBlockHandler.playBlock(block)
+  }
+
+  authorizeAndPlayURI(uri, index) {
+    console.log('authorizeAndPlayURI');
+    this.store.dispatch({ type: actionTypes.SET, path: 'currentTrackIndex', data: index })
+    this.resetPlayer()
+    Tempofy.authorizeAndPlayURI(uri)
   }
 
   playTrack(uri, index) {

@@ -154,10 +154,12 @@ const FullScreen = ({trackDurationTime, trackPositionTime, position, timer, url,
 export default compose(
   withSpotify,
   connect(({spotify, player, data}) => ({
+    connected: spotify.connected,
     player: player,
     playerState: player.playerState,
     filteredTracks: data.filteredTracks,
-    isFading: data.isFading
+    isFading: data.isFading,
+    currentTrackIndex: data.currentTrackIndex
   })),
   mapProps((props) => {
     const fullTrack = props.filteredTracks && props.filteredTracks.find(item => item.track.uri === props.playerState.uri)
@@ -203,11 +205,15 @@ export default compose(
       props.spotify.skipToNext()
     },
     togglePlayPause: props => () => {
-      console.log('isFading: '+props.isFading);
-      if(props.player.playerState.paused && !props.isFading)
-        props.spotify.resume()
-      else
+      if(props.player.playerState.paused && !props.isFading) {
+        if(props.connected) {
+          props.spotify.resume()
+        } else {
+          props.spotify.authorizeAndPlayURI(props.playerState.uri, props.currentTrackIndex)
+        }
+      } else {
         props.spotify.pause()
+      }
     },
     onPlayBlock: props => (block) => {
       props.spotify.playBlock(block)
