@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux'
 import { compose, withHandlers, withState, mapProps } from 'recompose'
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Slider, Text } from 'react-native-elements';
 import withSpotify from '../utils/spotify'
 import PlatformIcon from './PlatformIcon';
@@ -15,7 +15,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row'
   },
   currentValue: {
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   rangeValue: {
@@ -25,13 +26,26 @@ const styles = StyleSheet.create({
   },
   slider: {
     flex: 1
+  },
+  controlIcon: {
+    marginTop: 5,
+    marginBottom: 5,
+    marginLeft: 20,
+    marginRight: 20
   }
 });
 
-const TempoFilter = ({player, min, max, currentValue, setCurrentValue, onFilterTracks}) => (
+const TempoFilter = ({player, min, max, currentValue, setCurrentValue, incrementValue, onFilterTracks}) => (
   <View style={styles.container}>
     <View style={styles.currentValue}>
+      <TouchableOpacity onPress={() => incrementValue(-1)}>
+        <Text h3 style={styles.controlIcon}>-</Text>
+      </TouchableOpacity>
+
       <Text h3>{currentValue}+5</Text>
+      <TouchableOpacity onPress={() => incrementValue(+1)}>
+        <Text h3 style={styles.controlIcon}>+</Text>
+      </TouchableOpacity>
     </View>
     <View style={styles.row}>
       <View style={styles.rangeValue}>
@@ -59,8 +73,14 @@ export default compose(
     player: player.playerState
   })),
   withState('currentValue', 'setCurrentValue', 0),
+  withHandlers({
+    incrementValue: props => (value) => {
+      props.setCurrentValue(props.currentValue+value)
+      props.onFilterTracks(props.currentValue+value)
+    }
+  }),
   mapProps((props) => {
-    const allTempos = props.tracks.map(item => item.tempo)
+    const allTempos = props.tracks.map(item => item.tempo).filter(tempo => tempo > 0 && tempo != null)
     const min = parseInt(Math.min.apply(Math, allTempos))
     const max = parseInt(Math.max.apply(Math, allTempos))
     const average = parseInt((min+max)/2)

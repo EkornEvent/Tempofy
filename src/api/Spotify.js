@@ -19,6 +19,7 @@ class Spotify {
   initializeApp() {
     this.removeSubscriptions()
     this.addSubscriptions()
+    this.data.getTempo()
     return AsyncStorage.getItem('accessToken')
     .then(accessToken => {
       if(accessToken) {

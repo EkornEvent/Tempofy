@@ -29,7 +29,6 @@ export default class PlayBlockHandler {
   }
 
   didChangePosition(position) {
-    console.log('didChangePosition: '+position);
     if(!this.currentBlock || this.isChangingBlock) {
       return
     }

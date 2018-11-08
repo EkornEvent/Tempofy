@@ -1,8 +1,26 @@
 import actionTypes from '../constants'
 
+const Firebase = require('firebase');
+var config = {
+    apiKey: "AIzaSyALdsLEkwjV47CeObve3l16_9xNZ0n4lbM",
+    authDomain: "organic-poetry-135723.firebaseapp.com",
+    databaseURL: "https://organic-poetry-135723.firebaseio.com",
+    storageBucket: "organic-poetry-135723.appspot.com",
+  };
+var firebase = Firebase.initializeApp(config);
+
 export default class Data {
   constructor(spotify) {
     this.spotify = spotify
+    this.tempo = null
+  }
+
+  getTempo() {
+    this.spotify.store.dispatch({ type: actionTypes.START, path: 'tempo' })
+    return firebase.database().ref('/tempo').on('value', function(snapshot) {
+      this.tempo = snapshot.val()
+      this.spotify.store.dispatch({ type: actionTypes.SET, path: 'tempo', data: this.tempo })
+    }, this)
   }
 
   getUserPlaylists() {
@@ -81,6 +99,18 @@ export default class Data {
     })
     .then(responses => {
       return responses.map(data => data.items).flat()
+    })
+    .then(data => {
+      return data.map(item => {
+        var tempo = item.tempo
+        if(this.tempo[item.track.id]) {
+          tempo = this.tempo[item.track.id].tempo
+        }
+        return {
+          ...item,
+          tempo
+        }
+      })
     })
     .then(data => {
       this.spotify.store.dispatch({ type: actionTypes.SET, path: 'tracks', data })

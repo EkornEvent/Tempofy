@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const FullScreen = ({trackDurationTime, trackPositionTime, position, timer, url, playBlocks, player, playerState, onPlayBlock, canSkipPrevious, canSkipNext, onSkipPrevious, togglePlayPause, onSkipNext, toggleAutoSkipMode, toggleAutoSkipTime, isFading}) => (
+const FullScreen = ({trackDurationTime, trackPositionTime, position, tempo, timer, url, playBlocks, player, playerState, onPlayBlock, canSkipPrevious, canSkipNext, onSkipPrevious, togglePlayPause, onSkipNext, toggleAutoSkipMode, toggleAutoSkipTime, isFading}) => (
   <SafeAreaView style={styles.container}>
     <View style={styles.coverContainer}>
       <ImageBackground
@@ -80,6 +80,9 @@ const FullScreen = ({trackDurationTime, trackPositionTime, position, timer, url,
         />
       <View style={{flex: 1}} />
       <View>
+        {tempo &&
+          <Text h4 style={styles.coverText}>{parseInt(tempo)} BPM</Text>
+        }
         <Text h4 style={styles.coverText}>{playerState.name}</Text>
         <Text h5 style={styles.coverText}>{playerState.artistName}</Text>
         <Text h5 style={styles.coverText}>{trackPositionTime} / {trackDurationTime}</Text>
@@ -164,6 +167,7 @@ export default compose(
   mapProps((props) => {
     const fullTrack = props.filteredTracks && props.filteredTracks.find(item => item.track.uri === props.playerState.uri)
     const url = fullTrack ? fullTrack.track.album.images[0].url : null
+    const tempo = fullTrack ? fullTrack.tempo : null
 
     // Total track duration
     const trackDuration = props.playerState.duration
@@ -189,6 +193,7 @@ export default compose(
     return {
       ...props,
       timer,
+      tempo,
       trackDurationTime,
       trackPositionTime,
       url,
