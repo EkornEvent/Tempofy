@@ -1,43 +1,43 @@
 package host.exp.exponent;
 
-import android.util.Log;
-
+import android.content.BroadcastReceiver;
 import android.content.Intent;
+import android.os.Looper;
+import android.util.Log;
+import android.os.Bundle;
 import android.app.Activity;
-import com.facebook.react.bridge.ActivityEventListener
-        ;
+import android.media.AudioManager;
+import android.content.Context;
+import android.net.NetworkInfo;
+import android.net.ConnectivityManager;
+import android.content.Intent;
+import android.content.IntentFilter;
+
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.LifecycleEventListener;
-import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
-
-import java.util.Map;
-import java.util.HashMap;
-
 import com.facebook.react.bridge.WritableMap;
-import com.spotify.android.appremote.api.ConnectionParams;
-import com.spotify.android.appremote.api.Connector;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
+import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.BaseActivityEventListener;
+import com.facebook.react.bridge.ActivityEventListener;
+import com.facebook.react.bridge.Callback;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
 
-import com.spotify.protocol.client.Subscription;
-import com.spotify.protocol.types.PlayerState;
-import com.spotify.protocol.types.Track;
+import android.os.Handler;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class TempofyModule extends ReactContextBaseJavaModule implements ActivityEventListener, LifecycleEventListener {
-
-    private static final String TAG = "Tempofy";
-    private static final String CLIENT_ID = "af12e293266d43f98e6cef548cd67197";
-    private static final String REDIRECT_URI = "tempofy-login://callback";
-    private static final int REQUEST_CODE = 1337;
-    private SpotifyAppRemote mSpotifyAppRemote;
 
     private ReactContext mReactContext;
 
@@ -53,22 +53,15 @@ public class TempofyModule extends ReactContextBaseJavaModule implements Activit
         return "Tempofy";
     }
 
-    public void onNewIntent(Intent intent) { }
+    private static final String CLIENT_ID = "af12e293266d43f98e6cef548cd67197";
+    private static final String REDIRECT_URI = "tempofy-login://callback";
+    private static final int REQUEST_CODE = 1337;
+
+    public static final String TAG = "Tempofy";
 
     @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        // Check if result comes from the correct activity
-        Log.i(TAG, "onActivityResult");
-        if (requestCode == REQUEST_CODE) {
-            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, data);
-            if (response.getType() == AuthenticationResponse.Type.TOKEN) {
-                WritableMap params = Arguments.createMap();
-                params.putString("accessToken", response.getAccessToken());
-                sendEvent("loginSuccessful", params);
-                //onAuthenticationComplete(response);
-                Log.i(TAG, "loginSuccessful");
-            }
-        }
+    public void onHostPause() {
+
     }
 
     @Override
@@ -77,24 +70,13 @@ public class TempofyModule extends ReactContextBaseJavaModule implements Activit
     }
 
     @Override
-    public void onHostPause() {
-
-    }
-
-    @Override
     public void onHostDestroy() {
-        //Spotify.destroyPlayer(this);
-    }
 
-    private void sendEvent(String eventName, Object params) {
-        mReactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(eventName, params);
     }
 
     @ReactMethod
-    public void updatePlayerState() {
-        //Log.i(TAG, "updatePlayerState");
+    public void updatePlayerState(){
+
     }
 
     @ReactMethod
@@ -103,23 +85,79 @@ public class TempofyModule extends ReactContextBaseJavaModule implements Activit
                 AuthenticationResponse.Type.TOKEN,
                 REDIRECT_URI);
         builder.setScopes(new String[]{
+                "user-modify-playback-state",
+                "user-read-currently-playing",
+                "user-read-playback-state",
+                "user-library-modify",
+                "user-library-read",
+                "streaming",
+                "app-remote-control",
+                "user-read-email",
+                "user-read-private",
+                "user-read-birthdate",
+                "user-follow-read",
+                "user-follow-modify",
                 "playlist-read-private",
                 "playlist-read-collaborative",
                 "playlist-modify-public",
                 "playlist-modify-private",
-                "user-read-private",
-                "streaming",
-                "app-remote-control",
-                "user-read-playback-state",
-                "user-modify-playback-state",
-                "user-read-currently-playing",
                 "user-read-recently-played",
-                "user-library-read",
-                "user-library-modify"
+                "user-top-read"
         });
+
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(getCurrentActivity(), REQUEST_CODE, request);
-        Log.i(TAG, "login");
+
+        logStatus("login");
+    }
+
+    private void sendEvent(String eventName, Object params) {
+        mReactContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(eventName, params);
+    }
+
+    private void logStatus(String status) {
+        Log.i(TAG, status);
+    }
+
+    public void onNewIntent(Intent intent) { }
+
+    @Override
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        Log.i(TAG, "onActivityResult");
+        // Check if result comes from the correct activity
+        if (requestCode == REQUEST_CODE) {
+            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, data);
+            switch (response.getType()) {
+                // Response was successful and contains auth token
+                case TOKEN:
+                    // Handle successful response
+                    WritableMap params = Arguments.createMap();
+                    params.putString("accessToken", response.getAccessToken());
+                    sendEvent("loginSuccessful", params);
+                    onAuthenticationComplete(response);
+                    logStatus("loginSuccessful");
+                    break;
+
+                // Auth flow returned an error
+                case ERROR:
+                    // Handle error response
+                    logStatus("loginError: " + response.getError());
+                    break;
+
+                // Most likely auth flow was cancelled
+                default:
+                    // Handle other cases
+                    logStatus("cancelled");
+            }
+        }
+    }
+
+    private void onAuthenticationComplete(AuthenticationResponse authResponse) {
+        // Once we have obtained an authorization token, we can proceed with creating a Player.
+        logStatus("onAuthenticationComplete");
+
     }
 
 }

@@ -54,10 +54,6 @@
     android:largeHeap="true">
 
     <activity
-      android:name="com.spotify.sdk.android.authentication.LoginActivity"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
-    <activity
       android:name=".LauncherActivity"
       android:exported="true"
       android:launchMode="singleTask"
@@ -95,7 +91,30 @@
       <!-- ADD DETACH APP SPECIFIC INTENT FILTERS -->
     </activity>
 
-    <activity
+
+      <activity
+          android:exported="true"
+          android:name="com.spotify.sdk.android.authentication.AuthCallbackActivity"
+          android:theme="@android:style/Theme.Translucent.NoTitleBar">
+
+          <intent-filter>
+              <action android:name="android.intent.action.VIEW"/>
+              <category android:name="android.intent.category.DEFAULT"/>
+              <category android:name="android.intent.category.BROWSABLE"/>
+
+              <data
+                  android:scheme="@string/com_spotify_sdk_redirect_scheme"
+                  android:host="@string/com_spotify_sdk_redirect_host"/>
+          </intent-filter>
+      </activity>
+
+      <activity
+          android:name="com.spotify.sdk.android.authentication.LoginActivity"
+          android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      </activity>
+
+
+      <activity
       android:name=".experience.ShellAppActivity"
       android:launchMode="singleTask"
       android:configChanges="keyboard|keyboardHidden|orientation|screenSize"

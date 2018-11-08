@@ -14,18 +14,15 @@ import java.util.List;
 public class TempofyPackage implements ReactPackage {
 
     @Override
-    public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
-        return Collections.emptyList();
+    public List<NativeModule> createNativeModules(ReactApplicationContext reactApplicationContext) {
+        List<NativeModule> modules = new ArrayList<NativeModule>();
+        modules.add(new TempofyModule(reactApplicationContext));
+        return modules;
     }
 
     @Override
-    public List<NativeModule> createNativeModules(
-            ReactApplicationContext reactContext) {
-        List<NativeModule> modules = new ArrayList<>();
-
-        modules.add(new TempofyModule(reactContext));
-
-        return modules;
+    public List<ViewManager> createViewManagers(ReactApplicationContext reactApplicationContext) {
+        return Arrays.<ViewManager>asList();
     }
 
 }

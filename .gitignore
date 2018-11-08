@@ -37,6 +37,7 @@ local.properties
 buck-out/
 \.buckd/
 *.keystore
+keystores
 
 # Bundle artifact
 *.jsbundle

@@ -1,50 +1,79 @@
 {
   "project_info": {
-    "project_id": "exponent-5dd6d",
-    "project_number": "367315174693",
-    "name": "Exponent Play Services"
+    "project_number": "319975246753",
+    "firebase_url": "https://organic-poetry-135723.firebaseio.com",
+    "project_id": "organic-poetry-135723",
+    "storage_bucket": "organic-poetry-135723.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:367315174693:android:f968efbb41d1fa7a",
-        "client_id": "android:host.exp.exponent",
-        "client_type": 1,
+        "mobilesdk_app_id": "1:319975246753:android:1e7a6436df5b0c6a",
         "android_client_info": {
-          "package_name": "com.tempofy",
-          "certificate_hash": ""
+          "package_name": "com.tempofy"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "319975246753-20sdmq26jgkmiqa2u45k9sqg4pv9arkd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tempofy",
+            "certificate_hash": "0eeebafa9562e528326534298deaaae65f916b62"
+          }
+        },
+        {
+          "client_id": "319975246753-c3vlqn7pcv7dbb7ki4d12gus608j4q24.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tempofy",
+            "certificate_hash": "334835b895e9feaeb6bfa752d4a1a98e8f269cc4"
+          }
+        },
+        {
+          "client_id": "319975246753-mf0aoiancfvnv662m65kip0f84l43ij4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tempofy",
+            "certificate_hash": "a96bd2932b450dd48897f2c6733808e3ee9cc440"
+          }
+        },
+        {
+          "client_id": "319975246753-gmech79upv8cr00i1d6c4jr557ssicvc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": ""
+          "current_key": "AIzaSyAuBGAK_vyKODFFxCdI7RBUGzuIfnyfXUI"
         }
       ],
       "services": {
         "analytics_service": {
-          "status": 2,
-          "analytics_property": {
-            "tracking_id": "UA-76673608-1"
-          }
-        },
-        "cloud_messaging_service": {
-          "status": 2,
-          "apns_config": []
+          "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
-        },
-        "google_signin_service": {
-          "status": 1
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "319975246753-gmech79upv8cr00i1d6c4jr557ssicvc.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "319975246753-o3rbnoh28stoaua3iubvf69ocm2pg4ks.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ekorn.Tempofy",
+                "app_store_id": "947586369"
+              }
+            }
+          ]
         },
         "ads_service": {
-          "status": 1
+          "status": 2
         }
       }
     }
   ],
-  "client_info": [],
-  "ARTIFACT_VERSION": "1"
+  "configuration_version": "1"
 }

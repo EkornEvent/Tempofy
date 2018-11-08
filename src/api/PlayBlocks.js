@@ -38,7 +38,7 @@ export default class PlayBlockHandler {
     const autoSkipMode = this.player.autoSkipMode
     const isFading = this.spotify.store.getState().data.isFading
     if(autoSkipMode > 0) {
-      const endTime = autoSkipMode == 1 ? this.currentBlock.end : (this.currentBlock.end - autoSkipFadeTime)
+      const endTime = this.currentBlock.end - autoSkipFadeTime
       if(position > endTime) {
         if(!isFading) {
           this.spotify.fadeWithAction(() => {

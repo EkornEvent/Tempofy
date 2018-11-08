@@ -1,3 +1,7 @@
+def keystorePropertiesFile = rootProject.file("local.properties");
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 buildscript {
   repositories {
     google()
@@ -70,8 +74,11 @@ android {
     }
   }
   signingConfigs {
-    debug {
-      storeFile file('../debug.keystore')
+    release {
+      storeFile file(keystoreProperties['MYAPP_RELEASE_STORE_FILE'])
+      storePassword keystoreProperties['MYAPP_RELEASE_STORE_PASSWORD']
+      keyAlias keystoreProperties['MYAPP_RELEASE_KEY_ALIAS']
+      keyPassword keystoreProperties['MYAPP_RELEASE_KEY_PASSWORD']
     }
   }
   lintOptions {
@@ -104,7 +111,7 @@ dependencies {
   implementation 'com.android.support:multidex:1.0.1'
 
   implementation project(':spotify-app-remote')
-  implementation 'com.spotify.android:auth:1.1.0'
+  implementation 'com.spotify.sdk:spotify-auth-release:1.1.0@aar'
   implementation "com.google.code.gson:gson:2.6.1"
 
   // Our dependencies
