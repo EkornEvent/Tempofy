@@ -66,7 +66,7 @@ export default compose(
       spotify.login()
     },
     continue: props => () => {
-      props.navigation.navigate('List')
+      props.navigation.navigate('Playlists')
     }
   }),
   lifecycle({

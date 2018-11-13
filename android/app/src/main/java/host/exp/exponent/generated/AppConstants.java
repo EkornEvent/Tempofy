@@ -29,10 +29,12 @@ public class AppConstants {
         
         
         
+        
+        
         // ADD EMBEDDED RESPONSES HERE
         // START EMBEDDED RESPONSES
-        embeddedResponses.add(new Constants.EmbeddedResponse("https://exp.host/@johra/tempofy/index.exp", "assets://shell-app-manifest.json", "application/json"));
-        embeddedResponses.add(new Constants.EmbeddedResponse("https://d1wp6m56sqw74a.cloudfront.net/%40johra%2Ftempofy%2F3.0%2F43c94a618bae72a0417fa2148ede2d52-30.0.0-android.js", "assets://shell-app.bundle", "application/javascript"));
+        embeddedResponses.add(new Constants.EmbeddedResponse("https://exp.host/@johra/tempofy", "assets://shell-app-manifest.json", "application/json"));
+        embeddedResponses.add(new Constants.EmbeddedResponse("https://d1wp6m56sqw74a.cloudfront.net/%40johra%2Ftempofy%2F3.0%2F0db364aaccc0d5f15aa86c1325fa640d-30.0.0-android.js", "assets://shell-app.bundle", "application/javascript"));
         // END EMBEDDED RESPONSES
     EMBEDDED_RESPONSES = embeddedResponses;
   }

@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const PlaylistScreen = ({playlists, error, onPress, onRefresh}) => (
+const PlaylistScreen = ({playlists, onPress, onRefresh}) => (
   <SafeAreaView style={styles.container}>
     <ScrollView>
     {

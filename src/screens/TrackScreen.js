@@ -19,13 +19,8 @@ const styles = StyleSheet.create({
   }
 });
 
-const TrackScreen = ({tracks, filteredTracks, error, onPress, onPressShuffle, onPressNowPlaying, onRefresh, filterTracks}) => (
+const TrackScreen = ({tracks, filteredTracks, onPress, onPressShuffle, onPressNowPlaying, onRefresh, filterTracks}) => (
   <SafeAreaView style={styles.container}>
-    {error &&
-      <View>
-        <Text h4>{error}</Text>
-      </View>
-    }
     {filteredTracks &&
       <View>
         <TempoFilter tracks={tracks} onFilterTracks={(value) => filterTracks(tracks, value)}/>
@@ -55,7 +50,6 @@ export default compose(
   connect(({spotify, player, data}) => ({
     tracks: data.tracks,
     filteredTracks: data.filteredTracks,
-    error: spotify.error,
     player: player.playerState
   })),
   withHandlers({

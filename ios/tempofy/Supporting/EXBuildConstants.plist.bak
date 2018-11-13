@@ -14,6 +14,6 @@
 	<key>STANDALONE_CONTEXT_TYPE</key>
 	<string>user</string>
 	<key>developmentUrl</key>
-	<string>exp4b30b5fbfb0a4a15901c785668175521://172.20.10.2:19000</string>
+	<string>exp4b30b5fbfb0a4a15901c785668175521://192.168.86.70:19000</string>
 </dict>
 </plist>
