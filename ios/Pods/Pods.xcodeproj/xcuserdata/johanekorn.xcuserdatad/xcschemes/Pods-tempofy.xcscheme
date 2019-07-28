@@ -14,10 +14,10 @@
             buildForArchiving = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "B1C99839660923BC0F0A164A2AA53B96"
-               BlueprintName = "Pods-tempofy"
+               BlueprintIdentifier = "DEEEC45E3153991EC525D45FBD7F7C32"
+               BlueprintName = "Pods-Tempofy"
                ReferencedContainer = "container:Pods.xcodeproj"
-               BuildableName = "libPods-tempofy.a">
+               BuildableName = "libPods-Tempofy.a">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>

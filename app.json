@@ -1,47 +1,4 @@
 {
-  "expo": {
-    "name": "Tempofy",
-    "description": "Keep all your best tracks in one big playlist and let Tempofy filter out those you want by tempo",
-    "slug": "tempofy",
-    "privacy": "public",
-    "sdkVersion": "30.0.0",
-    "platforms": [
-      "ios",
-      "android"
-    ],
-    "version": "3.0",
-    "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
-    "splash": {
-      "image": "./src/assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.ekorn.Tempofy",
-      "buildNumber": "71",
-      "publishBundlePath": "ios/tempofy/Supporting/shell-app.bundle",
-      "publishManifestPath": "ios/tempofy/Supporting/shell-app-manifest.json"
-    },
-    "isDetached": true,
-    "detach": {
-      "iosExpoViewUrl": "https://s3.amazonaws.com/exp-exponent-view-code/ios-v2.8.2-sdk30.0.0-769da6d6-27c8-479e-91c7-0d33fcac97c8.tar.gz",
-      "androidExpoViewUrl": "https://s3.amazonaws.com/exp-exponent-view-code/android-v2.8.0-sdk30.0.0-db6a79cf-9009-4580-a743-d8279d600773.tar.gz"
-    },
-    "scheme": "exp4b30b5fbfb0a4a15901c785668175521",
-    "android": {
-      "package": "com.tempofy",
-      "versionCode": 9,
-      "publishBundlePath": "android/app/src/main/assets/shell-app.bundle",
-      "publishManifestPath": "android/app/src/main/assets/shell-app-manifest.json"
-    },
-    "githubUrl": "https://github.com/EkornEvent/Tempofy"
-  }
+  "name": "Tempofy",
+  "displayName": "Tempofy"
 }

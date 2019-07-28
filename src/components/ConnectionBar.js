@@ -1,36 +1,10 @@
 import React from 'react';
-import { connect } from 'react-redux'
-import { compose } from 'recompose'
-import { StyleSheet, View, Dimensions } from 'react-native';
-import { Text } from 'react-native-elements';
-import { Constants } from 'expo';
-const { width } = Dimensions.get('window');
-import { Header } from 'react-navigation';
 
-import withSpotify from '../utils/spotify'
-
-const styles = StyleSheet.create({
-  container: {
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    width,
-    position: 'absolute',
-    top: (Header.HEIGHT + Constants.statusBarHeight - 30)
-  },
-  offlineContainer: {
-    backgroundColor: '#b52424'
-  },
-  offlineText: {
-    color: '#fff'
-  },
-  connectingContainer: {
-    backgroundColor: 'orange'
-  },
-});
-
-const ConnectionBar = ({ connecting, connected, error }) => {
+const ConnectionBar = () => {
+  
+  return null;
+  
+  /*
   if(connected)
     return null
 
@@ -53,14 +27,7 @@ const ConnectionBar = ({ connecting, connected, error }) => {
       <Text style={styles.offlineText}>{'Disconnected'}</Text>
     </View>
   )
+*/
+};
 
-}
-
-export default compose(
-  withSpotify,
-  connect(({spotify}) => ({
-    connecting: spotify.connecting,
-    connected: spotify.connected,
-    error: spotify.error
-  }))
-)(ConnectionBar)
+export default ConnectionBar;

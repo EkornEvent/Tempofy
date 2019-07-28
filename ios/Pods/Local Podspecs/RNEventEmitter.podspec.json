@@ -1,0 +1,23 @@
+{
+  "name": "RNEventEmitter",
+  "version": "1.0.15",
+  "summary": "Send and receive events from react native modules",
+  "license": "MIT",
+  "authors": {
+    "name": "lufinkey"
+  },
+  "homepage": "git+https://github.com/lufinkey/react-native-events.git",
+  "platforms": {
+    "ios": "9.0"
+  },
+  "source": {
+    "git": "git+https://github.com/lufinkey/react-native-events.git",
+    "tag": "v1.0.15"
+  },
+  "source_files": "ios/**/*.{h,m}",
+  "dependencies": {
+    "React": [
+
+    ]
+  }
+}

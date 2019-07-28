@@ -1,83 +1,42 @@
-// Copyright 2015-present 650 Industries. All rights reserved.
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
 
 #import "AppDelegate.h"
-#import "ExpoKit.h"
-#import "EXViewController.h"
 
-@interface AppDelegate ()
-
-@property (nonatomic, strong) EXViewController *rootViewController;
-
-@end
+#import <React/RCTBridge.h>
+#import <React/RCTBundleURLProvider.h>
+#import <React/RCTRootView.h>
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    _window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    _window.backgroundColor = [UIColor whiteColor];
-    [[ExpoKit sharedInstance] application:application didFinishLaunchingWithOptions:launchOptions];
-    _rootViewController = [ExpoKit sharedInstance].rootViewController;
-    _window.rootViewController = _rootViewController;
+  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+  RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge
+                                                   moduleName:@"Tempofy"
+                                            initialProperties:nil];
 
-    [_window makeKeyAndVisible];
-    
-    self.tempofy = [Tempofy alloc];
-    [self.tempofy setupSharedAuthentication];
-    
-    return YES;
+  rootView.backgroundColor = [[UIColor alloc] initWithRed:1.0f green:1.0f blue:1.0f alpha:1];
+
+  self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+  UIViewController *rootViewController = [UIViewController new];
+  rootViewController.view = rootView;
+  self.window.rootViewController = rootViewController;
+  [self.window makeKeyAndVisible];
+  return YES;
 }
 
-- (void)applicationDidBecomeActive:(UIApplication *)application
+- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
 {
-    [self.tempofy didBecomeActive];
-}
-
-- (void)applicationWillResignActive:(UIApplication *)application {
-    [self.tempofy willResignActive];
-}
-
-#pragma mark - Handling URLs
-- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options
-{
-    return [self.tempofy openURL:url app:app options:options];
-}
-
-- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(nullable NSString *)sourceApplication annotation:(id)annotation
-{
-    return [[ExpoKit sharedInstance] application:application openURL:url sourceApplication:sourceApplication annotation:annotation];
-}
-
-- (BOOL)application:(UIApplication *)application continueUserActivity:(nonnull NSUserActivity *)userActivity restorationHandler:(nonnull void (^)(NSArray * _Nullable))restorationHandler
-{
-    return [[ExpoKit sharedInstance] application:application continueUserActivity:userActivity restorationHandler:restorationHandler];
-}
-
-#pragma mark - Notifications
-
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)token
-{
-    [[ExpoKit sharedInstance] application:application didRegisterForRemoteNotificationsWithDeviceToken:token];
-}
-
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)err
-{
-    [[ExpoKit sharedInstance] application:application didFailToRegisterForRemoteNotificationsWithError:err];
-}
-
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)notification
-{
-    [[ExpoKit sharedInstance] application:application didReceiveRemoteNotification:notification];
-}
-
-- (void)application:(UIApplication *)application didReceiveLocalNotification:(nonnull UILocalNotification *)notification
-{
-    [[ExpoKit sharedInstance] application:application didReceiveLocalNotification:notification];
-}
-
-- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(nonnull UIUserNotificationSettings *)notificationSettings
-{
-    [[ExpoKit sharedInstance] application:application didRegisterUserNotificationSettings:notificationSettings];
+#if DEBUG
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index" fallbackResource:nil];
+#else
+  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+#endif
 }
 
 @end

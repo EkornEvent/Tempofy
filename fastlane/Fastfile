@@ -23,12 +23,12 @@ platform :ios do
   desc "Increment"
   lane :increment do
     # Automatically increment patch version number.
-    currentVersion = get_version_number(xcodeproj: "./ios/tempofy.xcodeproj")
+    currentVersion = get_version_number(xcodeproj: "./ios/Tempofy.xcodeproj")
     version = prompt(text: "Version number (" + currentVersion + "): ")
 
     increment_version_number(
       version_number: version,
-      xcodeproj: "./ios/tempofy.xcodeproj"
+      xcodeproj: "./ios/Tempofy.xcodeproj"
     )
 
     slack(
@@ -75,15 +75,15 @@ platform :ios do
 
     # Change build number
     increment_build_number(
-      xcodeproj: "./ios/tempofy.xcodeproj"
+      xcodeproj: "./ios/Tempofy.xcodeproj"
     )
 
     gym(
-      scheme: "",
-      # project: "./ios/tempofy.xcodeproj"
+      scheme: "Tempofy",
+      # project: "./ios/Tempofy.xcodeproj"
       # hypothetically could be a workspace
       # especially if you bring in pods!
-      workspace: "./ios/tempofy.xcworkspace"
+      workspace: "./ios/Tempofy.xcworkspace"
     )
 
     # Sometimes itunes email is different!
@@ -125,12 +125,12 @@ platform :ios do
 
     # Change build number
     increment_build_number(
-      xcodeproj: "./ios/tempofy.xcodeproj"
+      xcodeproj: "./ios/Tempofy.xcodeproj"
     )
 
     gym(
       scheme: "tempofy",
-      workspace: "./ios/tempofy.xcworkspace"
+      workspace: "./ios/Tempofy.xcworkspace"
     )
 
     # Deliver to store
