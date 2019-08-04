@@ -1,25 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { StyleSheet, View, SafeAreaView, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
 import { Text, Icon } from 'react-native-elements';
 import { Track, PlayBlock } from 'api/Types';
 import moment from 'moment';
-import { useMetadata, useTrackState, useSettings, useContent } from 'hooks/useTempofy';
-import { usePlayBlocks } from 'hooks/usePlayBlocks';
-import { usePlayer } from 'hooks/usePlayer';
-import { useNavigationParam } from 'react-navigation-hooks';
+import { useMetadata, useTrackState, useContent, useSettings, usePlayer } from 'hooks';
+import { PlayingContext } from "context/PlayingContext";
 import Spotify from 'rn-spotify-sdk';
 
 const FullScreen = () => {
-  const { autoSkipTime, toggleAutoSkipTime } = useSettings();
+  const { autoSkipTime, autoSkipMode, toggleAutoSkipTime, toggleAutoSkipMode } = useSettings();
   const state = useTrackState();
   const metadata = useMetadata();
   const { playTrack } = usePlayer();
-  const [playBlocks, playBlock] = usePlayBlocks();
+  const [playing, setPlaying] = useContext(PlayingContext);
   const {playlistTracks} = useContent();
   const isFading = false;
   const [canSkipPrevious, setCanSkipPrevious] = useState(false);
   const [canSkipNext, setCanSkipNext] = useState(false);
-  const autoSkipMode = 1;
 
   useEffect(() => {
     setCanSkipNext(metadata && metadata.nextTrack);
@@ -38,12 +35,8 @@ const FullScreen = () => {
     playTrack(metadata.nextTrack);
   }
 
-  function toggleAutoSkipMode() {
-
-  }
-
   function onPlayBlock(block: PlayBlock) {
-    playBlock(block);
+    playing.playBlock(block);
   }
   
   
@@ -77,7 +70,7 @@ const FullScreen = () => {
           </View>
           <TouchableOpacity style={styles.controlIcon} onPress={() => toggleAutoSkipMode()}>
             <View>
-              <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'redo' : 'megaphone') : 'infinite'}/>
+              <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
               <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip timer' : 'Fade timer') : 'Play track'}</Text>
             </View>
           </TouchableOpacity>
@@ -88,9 +81,13 @@ const FullScreen = () => {
             </View>
           </TouchableOpacity>
         </View>
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressDone, {flex: Spotify.getVolume()}]} />
+          <View style={[styles.progressLeft, {flex: 1 - Spotify.getVolume()}]} />
+        </View>
         <View style={styles.blocksContainer}>
         {
-          playBlocks.map((block: PlayBlock, index: number) => (
+          playing.playBlocks.map((block: PlayBlock, index: number) => (
             block.playable ? (
               <TouchableOpacity
                 key={index}

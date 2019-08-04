@@ -6,7 +6,8 @@
       "api/*": ["api/*"],
       "components/*": ["components/*"],
       "hooks/*": ["hooks/*"],
-      "screens/*": ["screens/*"]
+      "screens/*": ["screens/*"],
+      "context/*": ["context/*"]
     },
     "allowJs": true,
     "allowSyntheticDefaultImports": true,

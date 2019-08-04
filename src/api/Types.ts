@@ -16,3 +16,9 @@ export interface PlayBlock {
     end: number;
     playable: boolean;
 }
+
+export enum AutoSkipMode {
+    Off,
+    Skip,
+    Fade,
+}

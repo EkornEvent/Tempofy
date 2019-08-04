@@ -4,7 +4,7 @@ import { ListItem, Text, Icon } from 'react-native-elements';
 //import PlatformIcon from './PlatformIcon';
 //<PlatformIcon size={26} shortName={playerState.paused ? 'play' : 'pause'} style={styles.playPause}/>
 import moment from 'moment';
-import { useMetadata, useTrackState } from 'hooks/useTempofy';
+import { useMetadata, useTrackState } from 'hooks';
 import Spotify from 'rn-spotify-sdk';
 
 interface NowPlayingBarProps {
@@ -38,6 +38,10 @@ const NowPlayingBar = (props: NowPlayingBarProps) => {
     <View style={styles.container}>
     {currentTrack && state &&
       <View>
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressDone, {flex: Spotify.getVolume()}]} />
+          <View style={[styles.progressLeft, {flex: 1 - Spotify.getVolume()}]} />
+        </View>
         <ListItem
           title={currentTrack.name}
           subtitle={currentTrack.artistName}

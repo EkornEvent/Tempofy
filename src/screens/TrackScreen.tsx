@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { StyleSheet, View, SafeAreaView, FlatList, ActivityIndicator } from 'react-native';
 import { ListItem, Button } from 'react-native-elements';
-import Spotify from 'rn-spotify-sdk';
 import { useNavigationParam, useNavigation } from 'react-navigation-hooks';
 import { Track } from 'api/Types';
 import TempoFilter from 'components/TempoFilter';
 import NowPlayingBar from 'components/NowPlayingBar';
-import { usePlayer } from 'hooks/usePlayer';
-import { useContent } from 'hooks/useTempofy';
+import { useContent, usePlayer } from 'hooks';
 
 const styles = StyleSheet.create({
   container: {

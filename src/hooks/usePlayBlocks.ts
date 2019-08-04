@@ -1,17 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Spotify from 'rn-spotify-sdk';
 import { PlayBlock, Track } from 'api/Types';
-import { useMetadata, useTrackState, useSettings } from './useTempofy';
+import { usePlayer } from './usePlayer';
+import { useSettings } from './useSettings';
+import { useMetadata } from './useMetadata';
+import { useTrackState } from './useTrackState';
 import { useVolume } from './useVolume';
+import { PlayingContext } from "context/PlayingContext";
 
 export function usePlayBlocks() {
-    const [blocks, setBlocks] = useState<PlayBlock[]>([]);
-    const [currentBlock, setCurrentBlock] = useState<PlayBlock>(null);
+    const [playing, setPlaying] = useContext(PlayingContext);
     const metadata = useMetadata();
     const state = useTrackState();
     const [currentTrack, setCurrentTrack] = useState<Track>(null);
-    const {introSkipTime, outroSkipTime, fadeTime, autoSkipTime} = useSettings();
-    const {fadeDown, fadeUp, resetFade} = useVolume();
+    const {introSkipTime, outroSkipTime, fadeTime, autoSkipTime, autoSkipMode} = useSettings();
+    const {fadeDown, fadeUp} = useVolume();
+    const { playTrack } = usePlayer();
 
     useEffect(() => {
         if(metadata && (currentTrack === null || (metadata.currentTrack && (metadata.currentTrack.uri != currentTrack.uri)))) {
@@ -26,58 +30,55 @@ export function usePlayBlocks() {
     },[currentTrack]);
 
     useEffect(() => {
-        /*
-    const autoSkipFadeTime = this.player.autoSkipFadeTime
-    const autoSkipMode = this.player.autoSkipMode
-    const isFading = this.spotify.store.getState().data.isFading
-    if(autoSkipMode > 0) {
-      const endTime = this.currentBlock.end - autoSkipFadeTime
-      if(position > endTime) {
-        if(!isFading) {
-          this.spotify.fadeWithAction(() => {
-            if(autoSkipMode == 1) {
-              this.spotify.skipToNext()
-            } else if(autoSkipMode == 2) {
-              const playableBlocks = this.getPlayableBlocks()
-              const currentBlockIndex = playableBlocks.indexOf(this.currentBlock)
-              console.log('currentBlockIndex: ' + currentBlockIndex);
-              const nextBlockIndex = currentBlockIndex+1
-              if(nextBlockIndex <= playableBlocks.length -1) {
-                this.playBlock(playableBlocks[nextBlockIndex])
-              } else {
-                this.spotify.skipToNext()
-              }
+        if(state && state.position) {
+            const playingBlock = playing.playBlocks.find(block => ((state.position > block.start) && (state.position < block.end)));
+            if(playingBlock) {
+                if(state.position > (playingBlock.end - fadeTime)) {
+                    willEndPlayBlock();
+                }
             }
-          })
+            if(playingBlock != playing.currentBlock) {
+                setCurrentBlock(playingBlock);
+            }    
         }
-      }
-    } else if(autoSkipMode == 2) {
-      if(position > this.currentBlock.end - autoSkipFadeTime) {
-        Tempofy.pause()
-      }
+    },[state]);
+
+
+    function setBlocks(playBlocks: PlayBlock[]) {
+        console.log('setBlocks');
+        
+        setPlaying(playing => ({ ...playing, playBlocks }));
     }
-    */
-        const playingBlock = blocks.find(block => ((state.position > block.start) && (state.position < block.end)));
-        if(playingBlock) {
-            if(state.position > (playingBlock.end - fadeTime)) {
-                fadeDown();
-            }
-        }
-        if(playingBlock != currentBlock) {
-            setCurrentBlock(playingBlock);
-        }
-    },[state && state.position]);
+
+    function setCurrentBlock(playBlock: PlayBlock) {
+        console.log('setCurrentBlock');
+        
+        setPlaying(playing => ({ ...playing, currentBlock: playBlock }));
+    }
 
     async function didChangePlayBlock() {
-        if(currentBlock && !currentBlock.playable) {
-            await Spotify.seek(currentBlock.end);
+        console.log('didChangePlayBlock');
+        
+        if(playing.currentBlock && !playing.currentBlock.playable) {
+            await Spotify.seek(playing.currentBlock.end);
         }
         await fadeUp();
     }
 
+    async function willEndPlayBlock() {
+        await fadeDown();
+        if(autoSkipMode > 0) {
+            if(autoSkipMode == 1) {
+                playTrack(metadata.nextTrack);
+            } else if(autoSkipMode == 2) {
+                    
+            }
+        }
+    }
+
     useEffect(() => {
         didChangePlayBlock();
-    },[currentBlock]);
+    },[playing.currentBlock]);
 
     function setupPlayBlocks(blockDuration: number) {
         var playBlocks = []
@@ -151,7 +152,7 @@ export function usePlayBlocks() {
     }
 
     return [
-        blocks,
+        playing.playBlocks,
         playBlock
     ];
 }

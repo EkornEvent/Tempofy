@@ -8,7 +8,8 @@ module.exports = {
           "api": ["./src/api"],
           "components": ["./src/components"],
           "hooks": ["./src/hooks"],
-          "screens": ["./src/screens"]
+          "screens": ["./src/screens"],
+          "context": ["./src/context"]
         }
       }
     ]

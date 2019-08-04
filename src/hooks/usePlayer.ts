@@ -1,5 +1,5 @@
 import Spotify from 'rn-spotify-sdk';
-import { useSettings } from "./useTempofy";
+import { useSettings } from './useSettings';
 import { useVolume } from './useVolume';
 import { Track } from 'api/Types';
 

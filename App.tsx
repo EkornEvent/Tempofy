@@ -19,16 +19,19 @@ import {
 import ConnectionBar from './src/components/ConnectionBar'
 import AppNavigator from './src/navigation/AppNavigator';
 
-import { TempofyProvider } from "./src/TempofyContext";
+import { SettingsProvider } from "./src/context/SettingsContext";
+import { PlayingProvider } from "./src/context/PlayingContext";
 
 const App = () => {
   return (
     <View style={styles.container}>
-      <TempofyProvider>
-        {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-        <AppNavigator />
-        <ConnectionBar />
-      </TempofyProvider>
+      <PlayingProvider>
+        <SettingsProvider>
+          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+          <AppNavigator />
+          <ConnectionBar />
+        </SettingsProvider>
+      </PlayingProvider>
     </View>
   );
 };

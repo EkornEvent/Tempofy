@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Spotify from 'rn-spotify-sdk';
-import { useSettings } from "./useTempofy";
-import { useInterval } from "./useInterval";
+import { useSettings } from './useSettings';
 
 export function useVolume() {
     const { fadeTime } = useSettings();
@@ -11,21 +10,43 @@ export function useVolume() {
     const fadeTimeInMilliseconds = fadeTime*1000;
     
     function fadeDown() {
-        setVolume(1);
-        setTargetVolume(0);
-        setIsFading(true);
+        return createFade(false);
     };
 
     function fadeUp() {
-        setVolume(0);
-        setTargetVolume(1);
-        setIsFading(true);
+        return createFade(true);
+    }
+
+    function createFade(fadeUp: boolean) {
+        if(isFading) {
+            return
+        }
+        return new Promise(resolve => {
+            var volume: number = fadeUp ? 0 : 1;
+            const factor: number = 0.1;
+            const interval: number = fadeTimeInMilliseconds * factor;
+
+            setIsFading(true);
+            var fadeout = setInterval(function() {
+                if (fadeUp ? (volume < 1) : (volume > 0)) {
+                    volume += (factor * (fadeUp ? 1 : -1));
+                    Spotify.setVolume(volume);
+                }
+                else {
+                    // Stop the setInterval when 0 is reached
+                    Spotify.setVolume(fadeUp ? 1 : 0);
+                    clearInterval(fadeout);
+                    setIsFading(false);
+                    resolve();
+                }
+            }, interval);
+        })
     }
 
     function resetFade() {
         setIsFading(false);
     }
-
+/*
     useEffect(() => {
         //Spotify.setVolume(volume);
     },[volume])
@@ -49,7 +70,7 @@ export function useVolume() {
         }
         
     }, isFading ? fadeTimeInMilliseconds/10 : null);
-
+*/
     return {
         fadeDown,
         fadeUp,
