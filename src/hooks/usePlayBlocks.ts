@@ -6,19 +6,19 @@ import { useSettings } from './useSettings';
 import { useMetadata } from './useMetadata';
 import { useTrackState } from './useTrackState';
 import { useVolume } from './useVolume';
-import { PlayingContext } from "context/PlayingContext";
 
 export function usePlayBlocks() {
-    const [playing, setPlaying] = useContext(PlayingContext);
     const metadata = useMetadata();
     const state = useTrackState();
+    const [currentBlock, setCurrentBlock] = useState<PlayBlock>(null);
     const [currentTrack, setCurrentTrack] = useState<Track>(null);
+    const [playBlocks, setPlayBlocks] = useState<PlayBlock>(null);
     const {introSkipTime, outroSkipTime, fadeTime, autoSkipTime, autoSkipMode} = useSettings();
     const {fadeDown, fadeUp} = useVolume();
     const { playTrack } = usePlayer();
 
     useEffect(() => {
-        if(metadata && (currentTrack === null || (metadata.currentTrack && (metadata.currentTrack.uri != currentTrack.uri)))) {
+        if(metadata && (metadata.currentTrack != currentTrack)) {
             setCurrentTrack(metadata.currentTrack);
         }
     },[metadata]);
@@ -30,37 +30,24 @@ export function usePlayBlocks() {
     },[currentTrack]);
 
     useEffect(() => {
-        if(state && state.position) {
-            const playingBlock = playing.playBlocks.find(block => ((state.position > block.start) && (state.position < block.end)));
+        if(state && state.position && playBlocks) {
+            const playingBlock = playBlocks.find(block => ((state.position > block.start) && (state.position < block.end)));
             if(playingBlock) {
                 if(state.position > (playingBlock.end - fadeTime)) {
                     willEndPlayBlock();
                 }
             }
-            if(playingBlock != playing.currentBlock) {
+            if(playingBlock != currentBlock) {
                 setCurrentBlock(playingBlock);
             }    
         }
     },[state]);
 
-
-    function setBlocks(playBlocks: PlayBlock[]) {
-        console.log('setBlocks');
-        
-        setPlaying(playing => ({ ...playing, playBlocks }));
-    }
-
-    function setCurrentBlock(playBlock: PlayBlock) {
-        console.log('setCurrentBlock');
-        
-        setPlaying(playing => ({ ...playing, currentBlock: playBlock }));
-    }
-
     async function didChangePlayBlock() {
         console.log('didChangePlayBlock');
         
-        if(playing.currentBlock && !playing.currentBlock.playable) {
-            await Spotify.seek(playing.currentBlock.end);
+        if(currentBlock && !currentBlock.playable) {
+            await Spotify.seek(currentBlock.end);
         }
         await fadeUp();
     }
@@ -78,7 +65,7 @@ export function usePlayBlocks() {
 
     useEffect(() => {
         didChangePlayBlock();
-    },[playing.currentBlock]);
+    },[currentBlock]);
 
     function setupPlayBlocks(blockDuration: number) {
         var playBlocks = []
@@ -142,7 +129,7 @@ export function usePlayBlocks() {
             playable: false
         })
 
-        setBlocks(playBlocks);
+        setPlayBlocks(playBlocks);
         //console.log(playBlocks);
     }
 
@@ -152,7 +139,8 @@ export function usePlayBlocks() {
     }
 
     return [
-        playing.playBlocks,
+        currentBlock,
+        playBlocks,
         playBlock
     ];
 }

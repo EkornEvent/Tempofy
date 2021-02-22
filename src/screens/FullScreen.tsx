@@ -12,6 +12,7 @@ const FullScreen = () => {
   const state = useTrackState();
   const metadata = useMetadata();
   const { playTrack } = usePlayer();
+  
   const [playing, setPlaying] = useContext(PlayingContext);
   const {playlistTracks} = useContent();
   const isFading = false;

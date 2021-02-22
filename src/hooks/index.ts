@@ -6,3 +6,4 @@ export * from './usePlayer';
 export * from './useSettings';
 export * from './useTrackState';
 export * from './useVolume';
+export * from './useEvent';
