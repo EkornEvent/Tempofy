@@ -1,46 +1,67 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * 
- * Generated with the TypeScript template
- * https://github.com/emin93/react-native-template-typescript
- *
- * @format
- */
+import { useContext } from 'react';
+import { StyleSheet, SafeAreaView } from "react-native";
+import { AppContextProvider, AppContext} from './src/context/SpotifyContext';
+import { QueueContextProvider, QueueContext} from './src/context/QueueContext';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AuthenticateScreen } from './src/screens/Authenticate';
+import { WelcomeScreen } from './src/screens/Welcome';
+import { PlaylistScreen } from './src/screens/Playlist';
+import { NowPlayingBar } from './src/components/NowPlayingBar';
+import { TrackScreen } from './src/screens/Tracks';
+import { SettingsContextProvider } from './src/context/SettingsContext';
+import { ConnectionBar } from './src/components/ConnectionBar';
 
-import React from 'react';
-import {
-  StyleSheet,
-  View,
-  StatusBar,
-  Platform
-} from 'react-native';
+const Stack = createNativeStackNavigator();
 
-import ConnectionBar from './src/components/ConnectionBar'
-import AppNavigator from './src/navigation/AppNavigator';
-
-import { SettingsProvider } from "./src/context/SettingsContext";
-import { PlayingProvider } from "./src/context/PlayingContext";
-
-const App = () => {
-  return (
-    <View style={styles.container}>
-      <PlayingProvider>
-        <SettingsProvider>
-          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          <AppNavigator />
-          <ConnectionBar />
-        </SettingsProvider>
-      </PlayingProvider>
-    </View>
-  );
-};
+export default function App() {
+    return (
+        <SafeAreaView style={styles.container}>
+            <Providers>
+                <NavigationContainer>
+                    <NavigationRoutes />
+                </NavigationContainer>
+                <NowPlayingBar />
+                <ConnectionBar />
+            </Providers>
+        </SafeAreaView>
+    )
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+    container: {
+        flex: 1
+    }
 });
 
-export default App;
+type Props = {
+    children: React.ReactNode;
+}
+
+const Providers = (props: Props) => (
+    <AppContextProvider>
+        <QueueContextProvider>
+            <SettingsContextProvider>
+                {props.children}
+            </SettingsContextProvider>
+        </QueueContextProvider>
+    </AppContextProvider>
+)
+
+const NavigationRoutes = () => {
+    const { isConnected } = useContext(AppContext);
+  
+    return (
+        <Stack.Navigator>
+            {isConnected ? (
+            <>
+                <Stack.Screen name="Home" component={WelcomeScreen} />
+                <Stack.Screen name="Playlist" component={PlaylistScreen} />
+                <Stack.Screen name="Tracks" component={TrackScreen} />
+            </>
+        ):(
+            <Stack.Screen name="Welcome" component={AuthenticateScreen} />
+        )}
+        </Stack.Navigator>
+    )
+}

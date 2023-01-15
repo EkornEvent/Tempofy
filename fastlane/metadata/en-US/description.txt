@@ -1,5 +1,0 @@
-Play music from Spotify by tempo. Perfect for dance classes, running or other activities where music tempo is important.
-
-Keep all your best tracks in one big playlist and let Tempofy filter out those you want.
-
-*** Requires Spotify Premium

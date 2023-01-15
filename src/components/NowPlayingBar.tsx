@@ -1,94 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { ListItem, Text, Icon } from 'react-native-elements';
-//import PlatformIcon from './PlatformIcon';
-//<PlatformIcon size={26} shortName={playerState.paused ? 'play' : 'pause'} style={styles.playPause}/>
-import moment from 'moment';
-import { useMetadata, useTrackState } from 'hooks';
-import Spotify from 'rn-spotify-sdk';
+import React, { useContext, useState } from "react";
+import { StyleSheet, TouchableOpacity } from "react-native";
+import { AppContext } from "../context/SpotifyContext";
+import { LinearProgress, Text } from '@rneui/themed';
+import { QueueContext } from "../context/QueueContext";
+import { useEffect } from "react";
+import { Track } from "react-native-spotify-remote";
+import { useVolume } from "../helpers/hooks";
+import { FullScreen } from "./FullScreen";
+import { SettingsContext } from "../context/SettingsContext";
+import { AutoSkipMode } from "../helpers/types";
 
-interface NowPlayingBarProps {
-  onPress: Function
-}
+export const NowPlayingBar = () => {
+    const { isConnected, playerState, remote } = useContext(AppContext);
+    const { consumeNextInQueue } = useContext(QueueContext);
+    const {fadeDown, fadeUp, resetFade, isFading, fadeTime} = useVolume();
+    const [currentTrack, setCurrentTrack] = useState<Track>();
+    const { autoSkipMode, autoSkipTime } = useContext(SettingsContext);
+    const [playUntilPosition, setPlayUntilPosition] = useState(autoSkipTime);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [waiting, setWaiting] = useState(false);
 
-const NowPlayingBar = (props: NowPlayingBarProps) => {
-  const state = useTrackState();
-  const metadata = useMetadata();
-  
-  function togglePlayPause() {
-    Spotify.setPlaying(!state.playing);
-  }
+    const waitDuringPause = fadeTime;
 
-  function getTimeLeft() {
-    if(metadata && metadata.currentTrack && state) {
-      var playDuration = metadata.currentTrack.duration;
-      //if(this.props.autoSkipMode > 0 && this.props.autoSkipTimeLeftPosition != null)
-        //playDuration = props.player.autoSkipTimeLeftPosition;
-      const timeLeft = playDuration - state.position;
-      var duration = moment.duration(timeLeft > 0 ? timeLeft : 0, 'seconds');
-      const seconds = moment(duration.seconds(),'seconds');
-      return `${duration.minutes()}:${seconds.format('ss')}`;
-    } else {
-      return '';
+    useEffect(() => {
+        if(!playerState) {
+            return;
+        }
+        if(!currentTrack || currentTrack.uri != playerState.track.uri) {
+            setCurrentTrack(playerState.track);
+            setPlayUntilPosition(autoSkipTime);
+            resetFade();
+            fadeUp();
+        }
+
+        if(playerState.playbackPosition > playUntilPosition) {
+            setPlayUntilPosition(playerState.playbackPosition+autoSkipTime+waitDuringPause);
+        }
+        if(!waiting && playerState.playbackPosition > playUntilPosition - fadeTime) {
+            if(autoSkipMode != AutoSkipMode.Off) {
+                if(autoSkipMode == AutoSkipMode.Skip) {
+                    skipToNext(true);
+                } else {
+                    fadePause();
+                }
+            }
+        }
+    },[playerState]);
+
+    if(!isConnected) {
+        return null;
     }
-  }
 
-  const currentTrack = metadata ? metadata.currentTrack : null;
-  return (
-    <View style={styles.container}>
-    {currentTrack && state &&
-      <View>
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressDone, {flex: Spotify.getVolume()}]} />
-          <View style={[styles.progressLeft, {flex: 1 - Spotify.getVolume()}]} />
-        </View>
-        <ListItem
-          title={currentTrack.name}
-          subtitle={currentTrack.artistName}
-          onPress={() => props.onPress()}
-          rightIcon={
-              <TouchableOpacity style={styles.rightIcon} onPress={() => togglePlayPause()}>
-                <Text style={styles.timer}>{getTimeLeft()}</Text>
-                <Icon name={state.playing ? 'pause-circle-outline' : 'play-circle-outline'} />
-              </TouchableOpacity>
-          }
-          topDivider={true}
-        />
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressDone, {flex: state.position}]} />
-          <View style={[styles.progressLeft, {flex: metadata.currentTrack.duration - state.position}]} />
-        </View>
-      </View>
+    const skipToNext = async (useFade?: boolean) => {
+        setWaiting(true);
+        const nextItem = consumeNextInQueue();
+        if(nextItem) {
+            if(useFade) {
+                await fadeDown();
+            }
+            await remote.queueUri(nextItem.uri);
+            await remote.skipToNext();
+        } else {
+            await remote.pause();
+        }
+        setWaiting(false);
     }
-  </View>
-  )
+
+    const fadePause = async () => {
+        setWaiting(true);
+        await fadeDown();
+        await new Promise(resolve => setTimeout(resolve, waitDuringPause))
+        await fadeUp();
+        setWaiting(false);
+    }
+    
+    if(playerState) {
+        let progressValue = playerState.playbackPosition / playerState.track.duration;
+        return (
+            <>
+                <TouchableOpacity style={styles.container} onPress={() => setModalVisible(!modalVisible)}>
+                    <Text>{playerState.track.artist.name} - {playerState.track.name}</Text>
+                    <LinearProgress
+                        style={{ marginVertical: 10 }}
+                        value={progressValue}
+                        animation={false}
+                    />
+                </TouchableOpacity>
+                <FullScreen 
+                    playerState={playerState}
+                    playUntilPosition={playUntilPosition}
+                    visible={modalVisible}
+                    onSkipNext={skipToNext}
+                    onRequestClose={() => {
+                        setModalVisible(!modalVisible);
+                    }}
+                />
+            </>
+        )
+    }
+
+    return null;
 }
 
 const styles = StyleSheet.create({
-  container: {
-
-  },
-  rightIcon: {
-    flexDirection: 'row'
-  },
-  playPause: {
-    margin: 5
-  },
-  timer: {
-    alignSelf:'center'
-  },
-  progressContainer: {
-    flex: 0,
-    flexDirection: 'row',
-  },
-  progressDone: {
-    backgroundColor: 'green',
-    height: 10
-  },
-  progressLeft: {
-    backgroundColor: 'white',
-    height: 10
-  }
+    container: {
+        backgroundColor: 'lightgreen',
+        padding: 15
+    },
 });
-
-export default NowPlayingBar;
+  
