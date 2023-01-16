@@ -4,7 +4,7 @@
     "slug": "Tempofy",
     "version": "3.0",
     "scheme": "tempofy-login",
-    "orientation": "all",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
