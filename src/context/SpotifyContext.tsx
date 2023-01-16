@@ -74,15 +74,10 @@ export const AppContextProvider = (props: Props) => {
         };
 
         try {
-            
-            
             const { accessToken } = await auth.authorize(config);
-            console.log(accessToken);
             await remote.connect(accessToken);
             setToken(accessToken);
         } catch (err:any) {
-            console.log(err);
-            
             setError(err.message);
         }
     };
