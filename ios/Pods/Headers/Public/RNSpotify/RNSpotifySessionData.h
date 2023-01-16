@@ -1,1 +1,0 @@
-../../../../../node_modules/rn-spotify-sdk/ios/RNSpotifySessionData.h

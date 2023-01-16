@@ -1,4 +1,50 @@
 {
-  "name": "Tempofy",
-  "displayName": "Tempofy"
+  "expo": {
+    "name": "Tempofy",
+    "slug": "Tempofy",
+    "version": "3.0",
+    "scheme": "tempofy-login",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ekorn.Tempofy",
+      "usesNonExemptEncryption": false,
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "spotify"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.tempofy"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "65c3cf09-acee-44cf-8616-d466c689e474"
+      }
+    },
+    "plugins": [
+      "./spotify-plugin/index.js"
+    ]
+  }
 }
