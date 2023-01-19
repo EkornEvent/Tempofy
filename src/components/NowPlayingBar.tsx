@@ -12,7 +12,7 @@ import { AutoSkipMode } from "../helpers/types";
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
-    const { consumeNextInQueue } = useContext(QueueContext);
+    const { consumeNextInQueue, canSkipNext } = useContext(QueueContext);
     const {fadeDown, fadeUp, resetFade, isFading, fadeTime} = useVolume();
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const { autoSkipMode, autoSkipTime } = useContext(SettingsContext);
@@ -31,6 +31,7 @@ export const NowPlayingBar = () => {
             setPlayUntilPosition(autoSkipTime);
             resetFade();
             fadeUp();
+            queueNextItem();
         }
 
         if(playerState.playbackPosition > playUntilPosition) {
@@ -45,23 +46,40 @@ export const NowPlayingBar = () => {
                 }
             }
         }
+        if(currentTrack && !waiting && playerState.playbackPosition > (currentTrack.duration - fadeTime)) {
+            if(autoSkipMode != AutoSkipMode.Off) {
+                if(autoSkipMode == AutoSkipMode.Skip) {
+                    skipToNext(true);
+                } else {
+                    fadePause();
+                }
+            }
+        }
     },[playerState]);
 
     if(!isConnected) {
         return null;
     }
 
-    const skipToNext = async (useFade?: boolean) => {
-        setWaiting(true);
+    const queueNextItem = async () => {
         const nextItem = consumeNextInQueue();
         if(nextItem) {
-            if(useFade) {
-                await fadeDown();
-            }
             await remote.queueUri(nextItem.uri);
+        }
+    }
+
+    const skipToNext = async (useFade?: boolean) => {
+        setWaiting(true);
+        if(useFade) {
+            await fadeDown();
+            
+        }
+        if(canSkipNext) {
             await remote.skipToNext();
         } else {
             await remote.pause();
+            resetFade();
+            fadeUp();
         }
         setWaiting(false);
     }

@@ -4,6 +4,7 @@ import { Button, Icon, LinearProgress, Text } from '@rneui/themed'
 import { PlayerState } from "react-native-spotify-remote";
 import { SettingsContext } from "../context/SettingsContext";
 import { AppContext } from "../context/SpotifyContext";
+import { QueueContext } from "../context/QueueContext";
 
 export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:number | null, visible: boolean, onRequestClose: () => void, onSkipNext: () => void }> = ({
     playerState,
@@ -17,6 +18,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
     const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
+    const { canSkipNext } = useContext(QueueContext);
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -65,7 +67,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
                     <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>
                         <Icon size={40} name={playerState.isPaused ? 'play-arrow' : 'pause'}/>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.controlIcon} onPress={() => onSkipNext()}>
+                    <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipNext ? 1 : 0.2}]} disabled={!canSkipNext} onPress={() => onSkipNext()}>
                         <Icon size={40} name={'skip-next'}/>
                     </TouchableOpacity>
                 </View>

@@ -123,7 +123,7 @@ export const AppContextProvider = (props: Props) => {
         if(isConnected && !playerState!.isPaused) {
             remote.getPlayerState();
         }
-    }, 100);
+    }, 1000);
 
     const onConnected = () => {
         setIsConnected(true);
