@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/65c3cf09-acee-44cf-8616-d466c689e474"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -44,6 +45,9 @@
     },
     "plugins": [
       "./spotify-plugin/index.js"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
