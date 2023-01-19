@@ -1,10 +1,11 @@
 import React, {useEffect, useState, createContext} from 'react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue } from "firebase/database";
+import { TempoData } from '../helpers/types';
 
 // Initialize Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyALdsLEkwjV47CeObve3l16_9xNZ0n4lbM",
+    apiKey: process.env.FIREBASE_API_KEY,
     authDomain: "organic-poetry-135723.firebaseapp.com",
     databaseURL: "https://organic-poetry-135723.firebaseio.com",
     projectId: "organic-poetry-135723",
@@ -21,23 +22,27 @@ type Props = {
   children: React.ReactNode;
 }
 
+interface Dictionary<T> {
+    [Key: string]: T;
+}
+
 interface TempoContext {
-    allTempos: number[]
+    allTempos: Dictionary<TempoData>;
 }
 
 const defaultValue: TempoContext = {
-    allTempos: []
+    allTempos: {}
 }
 
 export const TempoContext = createContext(defaultValue);
 
 export const TempoContextProvider = (props: Props) => {
-    const [allTempos, setAllTempos] = useState([]);
+    const [allTempos, setAllTempos] = useState<Dictionary<TempoData>>({});
     
     useEffect(() => {
         const tempoRef = ref(db, 'tempo');
         onValue(tempoRef, (snapshot) => {
-        const data = snapshot.val();
+            const data = snapshot.val();
             setAllTempos(data);
         });
     },[]);
