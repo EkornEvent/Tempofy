@@ -7,3 +7,9 @@ export enum AutoSkipMode {
     Skip,
     Fade,
 }
+
+export interface TempoData {
+    tempo: number,
+    updatedAt: string,
+    updatedBy: string
+}

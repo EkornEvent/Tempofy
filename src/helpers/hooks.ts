@@ -1,5 +1,5 @@
-import { useContext, useEffect, useRef, useState } from 'react';
-import { VolumeManager } from 'react-native-volume-manager';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { VolumeManager, VolumeResult } from 'react-native-volume-manager';
 import { SettingsContext } from '../context/SettingsContext';
 
 type Delay = number | null;
@@ -29,6 +29,18 @@ export const useInterval = (callback: TimerHandler, delay: Delay) => {
     }, [delay]);
 };
 
+class Deferred {
+    promise: Promise<unknown>;
+    resolve: ((value: unknown) => void) | undefined;
+    reject: ((reason?: any) => void) | undefined;
+    constructor() {
+      this.promise = new Promise((resolve, reject) => {
+        this.resolve = resolve;
+        this.reject = reject;
+      });
+    }
+  }
+  
 export const useVolume = () => {
     const { fadeTime } = useContext(SettingsContext);
     const [isFading, setIsFading] = useState(false);
@@ -36,33 +48,40 @@ export const useVolume = () => {
     const [timerInterval, setTimerInterval] = useState<number | null>(null);
     const [increment, setIncrement] = useState(0);
     const [direction, setDirection] = useState(0);
-    
+    const promiseRef = useRef<Deferred | null>(null);
+
     const interval: number = fadeTime / 10;
 
     useEffect(() => {
         storeCurrentVolume();
-    },[])
+    },[]);
 
-    useInterval(() => {
-        updateFade();
-    }, timerInterval);
+    const storeCurrentVolume = async (input?: VolumeResult) => {
+        if(!isFading) {
+            const volume = input ? input.volume : await VolumeManager.getVolume() as number;
+            if(volume > 0) {
+                setDeviceVolume(volume);
+            }
+        }
+    };
 
-    const storeCurrentVolume = async () => {
-        const volume = await VolumeManager.getVolume() as number;
-        const setVolume = volume > 0 ? volume : 0.2;
-        setDeviceVolume(setVolume);
-        return setVolume;
-    }
-    
-    const fadeDown = async () => {
+    // listen to volume changes (example)
+    useEffect(() => {
+        const volumeListener = VolumeManager.addVolumeListener(storeCurrentVolume);
+        return () => {
+            volumeListener.remove();
+        }
+    }, [isFading]);
+
+
+    const fadeDown = () => {
         if(isFading) {
             return
         }
-        await storeCurrentVolume();
         return createFade(false);
     };
 
-    const fadeUp = async () => {
+    const fadeUp = () => {
         if(isFading) {
             return
         }
@@ -81,8 +100,12 @@ export const useVolume = () => {
         setDirection(fadeUp ? 1 : -1);
         setIncrement(increment);
         
-        return new Promise(resolve => setTimeout(resolve, fadeTime))
+        let deferred = new Deferred();
+        promiseRef.current = deferred;
+
+        return deferred.promise
     }
+
 
     const updateFade = async () => {
         if(deviceVolume == null) {
@@ -93,10 +116,10 @@ export const useVolume = () => {
         const newVolume = currentVolume + (increment * (direction > 0 ? 1 : -1));
         
         if (direction > 0 ? (newVolume < deviceVolume) : (newVolume > 0)) {
-            VolumeManager.setVolume(newVolume);
+            VolumeManager.setVolume(newVolume, {showUI:false});
         }
         else {
-            VolumeManager.setVolume(direction > 0 ? deviceVolume : 0);
+            VolumeManager.setVolume(direction > 0 ? deviceVolume : 0, {showUI:false});
             resetFade();
         }
     }
@@ -104,7 +127,12 @@ export const useVolume = () => {
     function resetFade() {
         setIsFading(false);
         setTimerInterval(null);
+        if(promiseRef && promiseRef.current && promiseRef.current.resolve) {
+            promiseRef.current.resolve(true);
+        }
     }
+
+    useInterval(updateFade, timerInterval);
 
     return {
         fadeDown,

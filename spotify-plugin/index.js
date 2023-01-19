@@ -1,5 +1,5 @@
-const { withPlugins, withAppDelegate, withDangerousMod, withXcodeProject, IOSConfig } = require('@expo/config-plugins');
-const { resolve, dirname } = require('path');
+const { withPlugins, withAppDelegate, withDangerousMod, withXcodeProject } = require('@expo/config-plugins');
+const { resolve } = require('path');
 const { readFileSync, writeFileSync } = require('fs');
 	
 function withSpotifyAppDelegate(config) {
@@ -53,18 +53,6 @@ function withSpotifyPodfileProperties(config) {
 	  ]);
 }
 
-/**
- * Add a framework to the default app native target.
- *
- * @param projectName Name of the PBX project.
- * @param framework String ending in `.framework`, i.e. `StoreKit.framework`
-
-export declare function addFramework({ project, projectName, framework, }: {
-  project: XcodeProject;
-  projectName: string;
-  framework: string;
-}): unknown;
-*/
 function withSpotifyFramework(config) {
   return withXcodeProject(config, (cfg) => {
     const xcodeProject = cfg.modResults;

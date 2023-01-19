@@ -3,10 +3,9 @@ import { StyleSheet, View } from "react-native";
 import { Slider, Icon, Text } from '@rneui/themed';
 import { TrackObject } from "../helpers/types";
 
-export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: (value: number) => void, onFilterTracksComplete: (value: number) => void }> = ({
+export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: (value: number) => void }> = ({
     data,
-    onFilterTracks,
-    onFilterTracksComplete
+    onFilterTracks
   }) => {
     const [currentValue, setCurrentValue] = useState<number>(50);
     const [min, setMin] = useState<number>(0);
@@ -32,9 +31,6 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
                 maximumValue={max}
                 minimumTrackTintColor="#222"
                 minimumValue={min}
-                onSlidingComplete={value =>
-                    onFilterTracksComplete(value)
-                }
                 onValueChange={value => {
                     setCurrentValue(value);
                     onFilterTracks(value);

@@ -11,6 +11,7 @@ import { NowPlayingBar } from './src/components/NowPlayingBar';
 import { TrackScreen } from './src/screens/Tracks';
 import { SettingsContextProvider } from './src/context/SettingsContext';
 import { ConnectionBar } from './src/components/ConnectionBar';
+import { TempoContextProvider } from './src/context/TempoContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,7 +43,9 @@ const Providers = (props: Props) => (
     <AppContextProvider>
         <QueueContextProvider>
             <SettingsContextProvider>
-                {props.children}
+                <TempoContextProvider>
+                    {props.children}
+                </TempoContextProvider>
             </SettingsContextProvider>
         </QueueContextProvider>
     </AppContextProvider>

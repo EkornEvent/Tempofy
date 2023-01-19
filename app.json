@@ -21,7 +21,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ekorn.Tempofy",
-      "usesNonExemptEncryption": false,
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "spotify"
