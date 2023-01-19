@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
-
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { AppContext} from '../context/SpotifyContext';
 import { StyleSheet, View, Alert } from "react-native";
 import { Button, Text } from '@rneui/themed';
@@ -28,7 +29,12 @@ export const AuthenticateScreen = () => {
 
     return (
         <View style={styles.container}>
+            <Text></Text>
+            <Text></Text>
+            <Text></Text>
             <Button onPress={handleClick} loading={loading} title="Connect to Spotify" />
+            <Text>{Constants.expoConfig?.version} - {Constants.nativeAppVersion} ({Updates.releaseChannel})</Text>
+            <Text>{Updates.updateId}</Text>
         </View>
     );
 }
@@ -38,6 +44,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-evenly',
     },
 });

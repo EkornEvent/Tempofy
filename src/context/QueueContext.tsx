@@ -31,8 +31,6 @@ export const QueueContextProvider = (props: Props) => {
 
     useEffect(() => {
         setCanSkipNext(queue.length > 0);
-        console.log('setCanSkipNext', queue.length > 0);
-        
     },[queue])
 
     return (
