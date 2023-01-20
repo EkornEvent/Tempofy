@@ -18,7 +18,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
     const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
-    const { canSkipNext } = useContext(QueueContext);
+    const { canSkipNext, currentTrack } = useContext(QueueContext);
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -70,6 +70,10 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
                     <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipNext ? 1 : 0.2}]} disabled={!canSkipNext} onPress={() => onSkipNext()}>
                         <Icon size={40} name={'skip-next'}/>
                     </TouchableOpacity>
+                </View>
+                <View style={styles.controlIcon}>
+                    <Text h1>{currentTrack ? currentTrack.tempo : '-'}</Text>
+                    <Text>bpm</Text>
                 </View>
                 <View style={styles.controlButtons}>
                     <View style={styles.controlIcon}>

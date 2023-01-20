@@ -18,7 +18,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const [items, setItems] = useState<TrackObject[]>([]);
     const [filteredItems, setFilteredItems] = useState<TrackObject[]>([]);
     const {allTempos} = useContext(TempoContext);
-    const { setQueue } = useContext(QueueContext);
+    const { setQueue, setCurrentTrack } = useContext(QueueContext);
 
     useEffect(() => {
         navigation.setOptions({ title: route.params.parent.name })
@@ -49,6 +49,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
         })
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
+        setCurrentTrack(item);
     }
 
     const handleFilterTracks = (value: number) => {
@@ -81,6 +82,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
                 />
             }
             ItemSeparatorComponent={separator}
+            keyExtractor={(item: TrackObject, index: number) => item.id+index.toString()}
             data={filteredItems}
             renderItem={({ item, index, separators }) => <TrackListItem
                 onPress={() => handleItemClick(item, index)}

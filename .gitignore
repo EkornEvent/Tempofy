@@ -5,7 +5,7 @@ yarn-error.log
 *.tgz
 .DS_Store
 *.log
-
+ios/
 # If you eject your app, uncomment Xcode, Android Studio, Buck and Bundle below.
 
 # Xcode
