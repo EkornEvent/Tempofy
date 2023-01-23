@@ -5,6 +5,7 @@ import { PlayerState } from "react-native-spotify-remote";
 import { SettingsContext } from "../context/SettingsContext";
 import { AppContext } from "../context/SpotifyContext";
 import { QueueContext } from "../context/QueueContext";
+import { VolumeContext } from "../context/VolumeContext";
 
 export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:number | null, visible: boolean, onRequestClose: () => void, onSkipNext: () => void }> = ({
     playerState,
@@ -19,6 +20,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
     const { canSkipNext, currentTrack } = useContext(QueueContext);
+    const { isFading } = useContext(VolumeContext);
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -40,6 +42,10 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
 
     const onSkipPrevious = () => {
         remote.skipToPrevious();
+    }
+
+    const getValidFadeTime = (value: number | null) => {
+        return value && value > 0 && !isFading ? value : '-'
     }
 
     return (
@@ -77,7 +83,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
                 </View>
                 <View style={styles.controlButtons}>
                     <View style={styles.controlIcon}>
-                        <Text h4>{secondsLeft}</Text>
+                        <Text h4>{getValidFadeTime(secondsLeft)}</Text>
                         <Text>sec</Text>
                     </View>
                     <TouchableOpacity style={styles.controlIcon} onPress={() => toggleAutoSkipMode()}>

@@ -4,16 +4,16 @@ import { AppContext } from "../context/SpotifyContext";
 import { LinearProgress, Text } from '@rneui/themed';
 import { QueueContext } from "../context/QueueContext";
 import { useEffect } from "react";
-import { useVolume } from "../helpers/hooks";
 import { FullScreen } from "./FullScreen";
 import { SettingsContext } from "../context/SettingsContext";
 import { AutoSkipMode } from "../helpers/types";
+import { VolumeContext } from "../context/VolumeContext";
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
     const { consumeNextInQueue, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
-    const {fadeDown, fadeUp, resetFade, fadeTime} = useVolume();
-    const { autoSkipMode, autoSkipTime } = useContext(SettingsContext);
+    const { fadeDown, fadeUp } = useContext(VolumeContext);
+    const { autoSkipMode, autoSkipTime, fadeTime } = useContext(SettingsContext);
     const [playUntilPosition, setPlayUntilPosition] = useState(autoSkipTime);
     const [modalVisible, setModalVisible] = useState(false);
     const [waiting, setWaiting] = useState(false);
@@ -27,14 +27,20 @@ export const NowPlayingBar = () => {
 
         if(currentTrack && currentTrack.uri != playerState.track.uri) {
             playNextInQueue();
+            return;
         }
 
-        if(!waiting && playerState.playbackPosition > playUntilPosition - fadeTime) {
+        if(!waiting && playUntilPosition > 0 && playerState.playbackPosition > playUntilPosition - 1000) {
             if(autoSkipMode != AutoSkipMode.Off) {
                 if(autoSkipMode == AutoSkipMode.Skip) {
                     skipToNext(true);
                 } else {
-                    fadePause();
+                    if(playerState.playbackPosition + autoSkipMode > playerState.track.duration) {
+                        // Almost reach end, not enough time for another 
+                        skipToNext(true);
+                    } else {
+                        fadePause();
+                    }
                 }
             }
         }
@@ -60,14 +66,14 @@ export const NowPlayingBar = () => {
         setWaiting(true);
         if(useFade) {
             await fadeDown();
+            await new Promise(resolve => setTimeout(resolve, waitDuringPause));
         }
         if(canSkipNext) {
             await remote.skipToNext();
         } else {
             await remote.pause();
         }
-        resetFade();
-        fadeUp();
+        await fadeUp();
         setWaiting(false);
     }
 
@@ -75,7 +81,7 @@ export const NowPlayingBar = () => {
         setWaiting(true);
         await fadeDown();
         await new Promise(resolve => setTimeout(resolve, waitDuringPause));
-        setPlayUntilPosition(playerState!.playbackPosition+autoSkipTime+waitDuringPause);
+        setPlayUntilPosition(playerState!.playbackPosition+autoSkipTime+fadeTime+waitDuringPause+fadeTime);
         await fadeUp();
         setWaiting(false);
     }
