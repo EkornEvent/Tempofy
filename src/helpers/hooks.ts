@@ -1,6 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { VolumeManager, VolumeResult } from 'react-native-volume-manager';
-import { SettingsContext } from '../context/SettingsContext';
+import { useEffect, useRef } from 'react';
 
 type Delay = number | null;
 type TimerHandler = (...args: any[]) => void;
@@ -28,3 +26,29 @@ export const useInterval = (callback: TimerHandler, delay: Delay) => {
         }
     }, [delay]);
 };
+
+export type DeferredPromise<DeferType> = {
+  resolve: (value: DeferType) => void;
+  reject: (value: unknown) => void;
+  promise: Promise<DeferType>;
+};
+
+export function useDeferredPromise<DeferType>() {
+  const deferRef = useRef<DeferredPromise<DeferType>>(null);
+
+  const defer = () => {
+    const deferred = {} as DeferredPromise<DeferType>;
+
+    const promise = new Promise<DeferType>((resolve, reject) => {
+      deferred.resolve = resolve;
+      deferred.reject = reject;
+    });
+
+    deferred.promise = promise;
+    // @ts-ignore: Unreachable code error
+    deferRef.current = deferred;
+    return deferRef.current;
+  };
+
+  return { defer, deferRef: deferRef.current };
+}

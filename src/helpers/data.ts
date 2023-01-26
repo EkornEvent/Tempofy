@@ -2,15 +2,15 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { TrackObject } from "./types";
 
 export const getUserPlaylists = async (api: any) => {
-    let requests = await createAllRequests(api, 'getUserPlaylists', undefined, 'items(uri,id,name)');
+    let requests = await createAllRequests(api, 'getUserPlaylists', undefined, {}, 'items(uri,id,name)');
     const responses: any = await Promise.all(requests);
     const allItems = responses.map((data: any) => data.body.items).flat();
     return allItems;
 }
 
 export const getPlaylistTracks = async (api: SpotifyWebApi, allTempos: any, id: string) => {
-    let requests = await createAllRequests(api, 'getPlaylistTracks', (id),'items(track(id,name,uri,artists(name)))', async (data: any) => {
-        const trackList = data.body.items.map((data:any) => data.track).filter((data:any) => data && data.id != null);
+    let requests = await createAllRequests(api, 'getPlaylistTracks', id, {market:'from_token'},'items(track(id,name,uri,is_playable,artists(name)))', async (data: any) => {
+        const trackList = data.body.items.map((data:any) => data.track).filter((data:any) => data && data.id != null && data.is_playable);
         const idList = trackList.map((item: any) => item.id);
         const audioData = await api.getAudioFeaturesForTracks(idList);
         const newItems: TrackObject[] = trackList.map((item_1: any, index: number) => {
@@ -29,7 +29,7 @@ export const getPlaylistTracks = async (api: SpotifyWebApi, allTempos: any, id: 
     return allItems;
 }
 
-const createAllRequests = async (api: any, request: string, args: any, fields?: string, onRequestComplete?: any) => {
+const createAllRequests = async (api: any, request: string, args: any, input: any, fields?: string, onRequestComplete?: any) => {
     const response: any = await api[request](args, {
         fields: 'total,limit'
     });
@@ -42,7 +42,8 @@ const createAllRequests = async (api: any, request: string, args: any, fields?: 
             api[request](args, {
                 offset: count*parseInt(response.body.limit),
                 limit: response.body.limit,
-                fields: fields
+                fields: fields,
+                ...input
             }).then(onRequestComplete)
         )
         count++

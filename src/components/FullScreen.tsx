@@ -1,26 +1,28 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { Modal, View, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions } from "react-native";
-import { Button, Icon, LinearProgress, Text } from '@rneui/themed'
+import { Icon, LinearProgress, Text } from '@rneui/themed'
 import { PlayerState } from "react-native-spotify-remote";
 import { SettingsContext } from "../context/SettingsContext";
 import { AppContext } from "../context/SpotifyContext";
 import { QueueContext } from "../context/QueueContext";
 import { VolumeContext } from "../context/VolumeContext";
+import { NowPlayingContext } from "../context/NowPlayingContext";
 
-export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:number | null, visible: boolean, onRequestClose: () => void, onSkipNext: () => void }> = ({
+export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, onRequestClose: () => void }> = ({
     playerState,
-    playUntilPosition,
     visible,
-    onRequestClose,
-    onSkipNext
+    onRequestClose
   }) => {
-    const progressValue = playerState.playbackPosition / playerState.track.duration;
-    const timeLeft = playUntilPosition != null ? playUntilPosition - playerState.playbackPosition : null;
-    const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
+    
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
     const { canSkipNext, currentTrack } = useContext(QueueContext);
     const { isFading } = useContext(VolumeContext);
+    const { skipToNext, playUntilPosition } = useContext(NowPlayingContext);
+    
+    const progressValue = playerState.playbackPosition / playerState.track.duration;
+    const timeLeft = playUntilPosition != null ? playUntilPosition - playerState.playbackPosition : null;
+    const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -73,7 +75,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, playUntilPosition:
                     <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>
                         <Icon size={40} name={playerState.isPaused ? 'play-arrow' : 'pause'}/>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipNext ? 1 : 0.2}]} disabled={!canSkipNext} onPress={() => onSkipNext()}>
+                    <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipNext ? 1 : 0.2}]} disabled={!canSkipNext} onPress={() => skipToNext()}>
                         <Icon size={40} name={'skip-next'}/>
                     </TouchableOpacity>
                 </View>

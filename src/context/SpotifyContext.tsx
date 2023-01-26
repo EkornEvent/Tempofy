@@ -53,7 +53,8 @@ export const AppContextProvider = (props: Props) => {
     const [token, setToken] = useState<string | null>(null);
     const [playerState, setPlayerState] = useState<PlayerState>();
     const [user, setUser] = useState<SpotifyApi.UserObjectPrivate>({} as SpotifyApi.UserObjectPrivate);
-   
+    const [updateInterval, setUpdateInterval] = useState<number | null>(100);
+
     const authenticate = async () => {
         setError(undefined);
         const config: ApiConfig = {
@@ -117,13 +118,14 @@ export const AppContextProvider = (props: Props) => {
     },[])
 
     useInterval(() => {
-        if(isConnected && !playerState) {
-            return remote.getPlayerState();
-        }
-        if(isConnected && !playerState!.isPaused) {
-            remote.getPlayerState();
-        }
-    }, 1000);
+        setUpdateInterval(null);
+        remote.getPlayerState().then(() => {
+            setUpdateInterval(100);
+        })
+        .catch(() => {
+            setUpdateInterval(1000);
+        })
+    }, updateInterval);
 
     const onConnected = () => {
         setIsConnected(true);

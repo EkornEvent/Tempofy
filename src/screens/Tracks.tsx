@@ -10,6 +10,7 @@ import { getPlaylistTracks} from "../helpers/data";
 import { TrackFilterHeader } from "../components/TrackFilterHeader";
 import { TrackObject } from "../helpers/types";
 import { QueueContext } from "../context/QueueContext";
+import { NowPlayingContext } from "../context/NowPlayingContext";
 
 export const TrackScreen = ({ route, navigation }: any) => {
     const { api, remote } = useContext(AppContext);
@@ -18,7 +19,8 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const [items, setItems] = useState<TrackObject[]>([]);
     const [filteredItems, setFilteredItems] = useState<TrackObject[]>([]);
     const {allTempos} = useContext(TempoContext);
-    const { setQueue, setCurrentTrack } = useContext(QueueContext);
+    const { setQueue } = useContext(QueueContext);
+    const { userSelectedTrack } = useContext(NowPlayingContext);
 
     useEffect(() => {
         navigation.setOptions({ title: route.params.parent.name })
@@ -43,13 +45,9 @@ export const TrackScreen = ({ route, navigation }: any) => {
     };
 
     const handleItemClick = async (item: TrackObject, index: number) => {
-        await remote.playUri(item.uri)
-        .catch(err => {
-            Alert.alert(err.message);
-        })
+        userSelectedTrack(item);
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
-        setCurrentTrack(item);
     }
 
     const handleFilterTracks = (value: number) => {
