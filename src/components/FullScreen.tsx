@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Modal, View, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions } from "react-native";
 import { Icon, LinearProgress, Text } from '@rneui/themed'
 import { PlayerState } from "react-native-spotify-remote";
@@ -7,6 +7,7 @@ import { AppContext } from "../context/SpotifyContext";
 import { QueueContext } from "../context/QueueContext";
 import { VolumeContext } from "../context/VolumeContext";
 import { NowPlayingContext } from "../context/NowPlayingContext";
+import { TempoContext } from "../context/TempoContext";
 
 export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, onRequestClose: () => void }> = ({
     playerState,
@@ -18,11 +19,17 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     const { remote } = useContext(AppContext);
     const { canSkipNext, currentTrack } = useContext(QueueContext);
     const { isFading } = useContext(VolumeContext);
-    const { skipToNext, playUntilPosition } = useContext(NowPlayingContext);
-    
-    const progressValue = playerState.playbackPosition / playerState.track.duration;
-    const timeLeft = playUntilPosition != null ? playUntilPosition - playerState.playbackPosition : null;
+    const { skipToNext, timeLeft } = useContext(NowPlayingContext);
+    const { selectedTempo, setSelectedTempo } = useContext(TempoContext);
+    const [userChangedTempo, setUserChangedTempo] = useState(false);
+
     const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
+
+    useEffect(() => {
+        if(userChangedTempo) {
+            setUserChangedTempo(false);
+        }
+    },[isFading])
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -44,6 +51,11 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
 
     const onSkipPrevious = () => {
         remote.skipToPrevious();
+    }
+
+    const onChangeTempo = (increment: number) => {
+        setSelectedTempo((tempo: number) => tempo+increment);
+        setUserChangedTempo(true);
     }
 
     const getValidFadeTime = (value: number | null) => {
@@ -79,9 +91,21 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
                         <Icon size={40} name={'skip-next'}/>
                     </TouchableOpacity>
                 </View>
-                <View style={styles.controlIcon}>
-                    <Text h1>{currentTrack ? currentTrack.tempo : '-'}</Text>
-                    <Text>bpm</Text>
+                <View style={styles.controlButtons}>
+                    <TouchableOpacity style={styles.controlIcon} onPress={() => onChangeTempo(-2)}>
+                        <Text h1>-</Text>
+                    </TouchableOpacity>
+                    <View style={styles.controlIcon}>
+                        <Text h1>
+                            {userChangedTempo ? selectedTempo : (
+                                currentTrack ? currentTrack.tempo : '-'
+                            )}
+                        </Text>
+                        <Text>bpm</Text>
+                    </View>
+                    <TouchableOpacity style={styles.controlIcon} onPress={() => onChangeTempo(2)}>
+                        <Text h1>+</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.controlButtons}>
                     <View style={styles.controlIcon}>
@@ -101,11 +125,6 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
                         </View>
                     </TouchableOpacity>
                 </View>
-                <LinearProgress
-                    style={{ marginVertical: 10 }}
-                    value={progressValue}
-                    animation={false}
-                />
             </SafeAreaView>
         </Modal>
     )

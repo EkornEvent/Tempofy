@@ -28,12 +28,16 @@ interface Dictionary<T> {
 
 interface TempoContext {
     allTempos: Dictionary<TempoData>;
-    loading: boolean
+    loading: boolean,
+    selectedTempo: number | null,
+    setSelectedTempo: any
 }
 
 const defaultValue: TempoContext = {
     allTempos: {},
-    loading: true
+    loading: true,
+    selectedTempo: null,
+    setSelectedTempo: () => { }
 }
 
 export const TempoContext = createContext(defaultValue);
@@ -41,6 +45,7 @@ export const TempoContext = createContext(defaultValue);
 export const TempoContextProvider = (props: Props) => {
     const [allTempos, setAllTempos] = useState<Dictionary<TempoData>>({});
     const [loading, setLoading] = useState(true);
+    const [selectedTempo, setSelectedTempo] = useState(null);
     
     useEffect(() => {
         const tempoRef = ref(db, 'tempo');
@@ -55,7 +60,9 @@ export const TempoContextProvider = (props: Props) => {
         <TempoContext.Provider
             value={{
                 allTempos,
-                loading
+                loading,
+                selectedTempo,
+                setSelectedTempo
             }}
         >
             {props.children}

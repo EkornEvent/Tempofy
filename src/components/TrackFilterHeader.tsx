@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Slider, Icon, Text } from '@rneui/themed';
 import { TrackObject } from "../helpers/types";
+import { SettingsContext } from "../context/SettingsContext";
 
-export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: (value: number) => void }> = ({
+export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: (value: number) => void, onShuffle: () => void }> = ({
     data,
-    onFilterTracks
+    onFilterTracks,
+    onShuffle
   }) => {
+    const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
+    
     const [currentValue, setCurrentValue] = useState<number>(50);
     const [min, setMin] = useState<number>(0);
     const [max, setMax] = useState<number>(100);
@@ -21,9 +25,20 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
           setMax(foundMax);
           setCurrentValue(Math.floor(average));
         }
-      },[data]);
+    },[data]);
+
+    const toggleAutoSkipMode = () => {
+        setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
+    }
+
+    const toggleAutoSkipTime = () => {
+        const step = 15000;
+        const newValue = autoSkipTime + step
+        setAutoSkipTime(newValue > 120000 ? step : newValue);
+    }
     
     return (
+        <>
         <View style={styles.container}>
             <Text style={styles.number}>{min}</Text>
             <Slider
@@ -58,6 +73,25 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
             />
             <Text style={styles.number}>{max}</Text>
         </View>
+        <View style={styles.actions}>
+            <TouchableOpacity style={styles.button} onPress={() => toggleAutoSkipMode()}>
+                <View>
+                <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
+                <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip timer' : 'Fade timer') : 'Play track'}</Text>
+                </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.shuffle} onPress={onShuffle}>
+                <Icon name='shuffle-variant' type='material-community'/>
+                <Text>Play shuffle</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => toggleAutoSkipTime()}>
+                <View>
+                <Text h4>{autoSkipTime/1000}</Text>
+                <Text>sec</Text>
+                </View>
+            </TouchableOpacity>
+        </View>
+        </>
     )
 }
 
@@ -71,6 +105,21 @@ const styles = StyleSheet.create({
     },
     number: {
         padding: 14
+    },
+    actions: {
+        flexDirection: 'row',
+        flex: 1,
+        alignItems: 'center',
+        alignSelf: 'center'
+    },
+    shuffle: {
+        flex: 2,
+        alignItems: 'center',
+        backgroundColor: 'lightblue'
+    },
+    button: {
+        flex: 1,
+        alignItems: 'center'
     }
 });
   

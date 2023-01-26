@@ -1,24 +1,36 @@
 import React, {useState, createContext, useEffect, useContext, useRef} from 'react';
 import { VolumeManager, VolumeResult } from 'react-native-volume-manager';
 import { SettingsContext } from '../context/SettingsContext';
-import { DeferredPromise, useDeferredPromise, useInterval } from '../helpers/hooks';
+import { useInterval } from '../helpers/hooks';
 
 type Props = {
   children: React.ReactNode;
 }
 
 interface VolumeContext {
-    fadeDown: () => Promise<unknown>;
-    fadeUp: () => Promise<unknown>;
-    abortFade: () => void;
+    fadeDown: () => Promise<unknown> | true | undefined;
+    fadeUp: () => Promise<unknown> | true | undefined;
+    resetFade: () => void;
     isFading: boolean;
 }
 
 const defaultValue: VolumeContext = {
-    fadeDown: () => new Promise<unknown>(resolve => resolve),
-    fadeUp: () => new Promise<unknown>(resolve => resolve),
-    abortFade: () => undefined,
+    fadeDown: () => undefined,
+    fadeUp: () => undefined,
+    resetFade: () => undefined,
     isFading: false
+}
+
+class Deferred {
+    promise: Promise<unknown>;
+    resolve: ((value: unknown) => void) | undefined;
+    reject: ((reason?: any) => void) | undefined;
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
 }
 
 export const VolumeContext = createContext(defaultValue);
@@ -30,7 +42,8 @@ export const VolumeContextProvider = (props: Props) => {
     const [timerInterval, setTimerInterval] = useState<number | null>(null);
     const [increment, setIncrement] = useState(0);
     const [direction, setDirection] = useState(0);
-    const { defer, deferRef } = useDeferredPromise<boolean>();
+    const [userChangedVolume, setUserChangedVolume] = useState<number | null>(null);
+    const promiseRef = useRef<Deferred | null>(null);
     const isFadingRef = useRef<boolean>(false);
     const interval: number = fadeTime / 10;
 
@@ -41,9 +54,7 @@ export const VolumeContextProvider = (props: Props) => {
 
 
     useEffect(() => {
-        setTimeout(() => {
-            isFadingRef.current = isFading
-        }, 100);
+        isFadingRef.current = isFading;
     },[isFading]);
 
     useEffect(() => {
@@ -60,28 +71,27 @@ export const VolumeContextProvider = (props: Props) => {
         
         const volume = input ? input.volume : await VolumeManager.getVolume() as number;
         if(volume > 0) {
-            console.log('storeCurrentVolume', volume);
             setDeviceVolume(volume);
         }
     };
     
     const fadeDown = () => {
         if(isFading) {
-            return new Promise<void>(resolve => resolve());
+            return
         }
         return createFade(false);
     };
 
     const fadeUp = () => {
         if(isFading) {
-            return new Promise<void>(resolve => resolve());
+            return
         }
         return createFade(true);
     }
 
     const createFade = (fadeUp: boolean) => {
         if(!deviceVolume) {
-            return new Promise<void>(resolve => resolve());
+            return true;
         }
         
         const increment: number = deviceVolume / 10;
@@ -91,7 +101,10 @@ export const VolumeContextProvider = (props: Props) => {
         setDirection(fadeUp ? 1 : -1);
         setIncrement(increment);
         
-        return defer().promise;
+        let deferred = new Deferred();
+        promiseRef.current = deferred;
+
+        return deferred.promise
     }
 
     const updateFade = async () => {
@@ -108,25 +121,15 @@ export const VolumeContextProvider = (props: Props) => {
         else {
             await VolumeManager.setVolume(direction > 0 ? deviceVolume : 0, {showUI:false});
             resetFade();
-            completedFade();
         }
     };
 
     function resetFade() {
         setIsFading(false);
         setTimerInterval(null);
-    }
-
-    function abortFade() {
-        resetFade();
-        if(deviceVolume != null) {
-            VolumeManager.setVolume(deviceVolume, {showUI:false});
+        if(promiseRef && promiseRef.current && promiseRef.current.resolve) {
+            promiseRef.current.resolve(true);
         }
-        deferRef?.reject('aborted');
-    }
-
-    function completedFade() {
-        deferRef?.resolve(true);
     }
 
     useInterval(updateFade, timerInterval);
@@ -136,7 +139,7 @@ export const VolumeContextProvider = (props: Props) => {
             value={{
                 fadeDown,
                 fadeUp,
-                abortFade,
+                resetFade,
                 isFading
             }}
         >

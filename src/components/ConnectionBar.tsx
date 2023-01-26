@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { LinearProgress, Text } from '@rneui/themed';
+import { StyleSheet, View } from "react-native";
+import { Text } from '@rneui/themed';
 import { AppContext } from "../context/SpotifyContext";
 
 export const ConnectionBar = () => {

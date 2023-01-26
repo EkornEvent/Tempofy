@@ -34,7 +34,7 @@ export type DeferredPromise<DeferType> = {
 };
 
 export function useDeferredPromise<DeferType>() {
-  const deferRef = useRef<DeferredPromise<DeferType>>(null);
+  const deferRef = useRef<DeferredPromise<DeferType>|null>(null);
 
   const defer = () => {
     const deferred = {} as DeferredPromise<DeferType>;
@@ -45,7 +45,6 @@ export function useDeferredPromise<DeferType>() {
     });
 
     deferred.promise = promise;
-    // @ts-ignore: Unreachable code error
     deferRef.current = deferred;
     return deferRef.current;
   };

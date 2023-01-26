@@ -117,16 +117,6 @@ export const AppContextProvider = (props: Props) => {
         }
     },[])
 
-    useInterval(() => {
-        setUpdateInterval(null);
-        remote.getPlayerState().then(() => {
-            setUpdateInterval(100);
-        })
-        .catch(() => {
-            setUpdateInterval(1000);
-        })
-    }, updateInterval);
-
     const onConnected = () => {
         setIsConnected(true);
     }

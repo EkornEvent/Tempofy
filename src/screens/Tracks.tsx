@@ -6,7 +6,7 @@ import { TempoContext} from '../context/TempoContext';
 import { Divider } from '@rneui/themed';
 import { LoadingScreen } from "../components/Loading";
 import { ErrorScreen } from "../components/Error";
-import { getPlaylistTracks} from "../helpers/data";
+import { getPlaylistTracks, shuffle} from "../helpers/data";
 import { TrackFilterHeader } from "../components/TrackFilterHeader";
 import { TrackObject } from "../helpers/types";
 import { QueueContext } from "../context/QueueContext";
@@ -18,8 +18,8 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const [error, setError] = useState<string | undefined>(undefined);
     const [items, setItems] = useState<TrackObject[]>([]);
     const [filteredItems, setFilteredItems] = useState<TrackObject[]>([]);
-    const {allTempos} = useContext(TempoContext);
-    const { setQueue } = useContext(QueueContext);
+    const { allTempos, selectedTempo, setSelectedTempo } = useContext(TempoContext);
+    const { setQueue, } = useContext(QueueContext);
     const { userSelectedTrack } = useContext(NowPlayingContext);
 
     useEffect(() => {
@@ -29,6 +29,13 @@ export const TrackScreen = ({ route, navigation }: any) => {
     useEffect(() => {
         fetchItems();
     }, []);
+
+    useEffect(() => {
+        if(selectedTempo) {
+            handleFilterTracks(selectedTempo);
+            handleShuffle(false);
+        }
+    }, [selectedTempo]);
 
     const fetchItems = async () => {
         setLoading(true);
@@ -48,6 +55,19 @@ export const TrackScreen = ({ route, navigation }: any) => {
         userSelectedTrack(item);
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
+    }
+
+    const handleShuffle = (play: boolean) => {
+        console.log('handleShuffle');
+        
+        const array = shuffle([...filteredItems]);
+        if(play) {
+            const firstItem = array.shift();
+            if(firstItem) {
+                userSelectedTrack(firstItem);
+            }
+        }
+        setQueue(array);
     }
 
     const handleFilterTracks = (value: number) => {
@@ -76,7 +96,8 @@ export const TrackScreen = ({ route, navigation }: any) => {
             ListHeaderComponent={
                 <TrackFilterHeader 
                     data={items} 
-                    onFilterTracks={handleFilterTracks}
+                    onFilterTracks={setSelectedTempo}
+                    onShuffle={() => handleShuffle(true)}
                 />
             }
             ItemSeparatorComponent={separator}
