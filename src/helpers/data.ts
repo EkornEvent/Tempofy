@@ -2,7 +2,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { TrackObject } from "./types";
 
 export const getUserPlaylists = async (api: any) => {
-    let requests = await createAllRequests(api, 'getUserPlaylists', undefined, {}, 'items(uri,id,name)');
+    let requests = await createAllRequests(api, 'getUserPlaylists', undefined, {}, 'items(uri,id,name,images)');
     const responses: any = await Promise.all(requests);
     const allItems = responses.map((data: any) => data.body.items).flat();
     return allItems;

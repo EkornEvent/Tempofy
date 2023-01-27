@@ -96,7 +96,8 @@ export const TrackScreen = ({ route, navigation }: any) => {
             ListHeaderComponent={
                 <TrackFilterHeader 
                     data={items} 
-                    onFilterTracks={setSelectedTempo}
+                    onValueChange={handleFilterTracks}
+                    onSlidingComplete={setSelectedTempo}
                     onShuffle={() => handleShuffle(true)}
                 />
             }

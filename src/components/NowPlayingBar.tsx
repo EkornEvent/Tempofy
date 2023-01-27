@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { AppContext } from "../context/SpotifyContext";
-import { Icon, LinearProgress, Text } from '@rneui/themed';
+import { Icon, makeStyles, Text } from '@rneui/themed';
 import { FullScreen } from "./FullScreen";
 import { NowPlayingContext } from "../context/NowPlayingContext";
 import { VolumeContext } from "../context/VolumeContext";
@@ -10,7 +10,8 @@ export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
     const { timeLeft } = useContext(NowPlayingContext);
     const { isFading } = useContext(VolumeContext);
-    
+    const styles = useStyles();
+
     const [modalVisible, setModalVisible] = useState(false);
     const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
 
@@ -57,9 +58,9 @@ export const NowPlayingBar = () => {
     return null;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
     container: {
-        backgroundColor: 'lightgreen',
+        backgroundColor: theme.colors.primary,
         alignContent: 'space-between',
         alignItems: 'center',
         flexDirection: 'row'
@@ -71,5 +72,5 @@ const styles = StyleSheet.create({
     },
     controlIcon: {
     },
-});
+}));
   

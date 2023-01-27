@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { ListItem } from '@rneui/themed'
+import { ListItem, makeStyles } from '@rneui/themed'
 import { TrackObject } from "../helpers/types";
 import { Text } from '@rneui/themed';
 import { AppContext } from "../context/SpotifyContext";
@@ -19,18 +19,30 @@ export const TrackListItem: React.FC<{
     } = item;
 
     const { playerState } = useContext(AppContext);
-
+    const styles = useStyles();
+    
     const isPlaying = playerState && playerState.track.uri == item.uri;
     
     return (
         <TouchableOpacity onPress={() => onPress && onPress(item)}>
             <ListItem bottomDivider>
-                <Text>{tempo}</Text>
                 <ListItem.Content>
-                    <ListItem.Title style={{fontWeight: isPlaying ? 'bold' : undefined}}>{name}</ListItem.Title>
+                    <ListItem.Title style={isPlaying ? styles.playingText : styles.defaultText}>{name}</ListItem.Title>
                     <ListItem.Subtitle>{artists && artists.map(artist => artist.name).join(' - ')}</ListItem.Subtitle>
                 </ListItem.Content>
+                <Text>{tempo}</Text>
             </ListItem>
         </TouchableOpacity>
     )
-  }
+}
+
+
+const useStyles = makeStyles((theme) => ({
+    defaultText: {
+        color: theme.colors.black
+    },
+    playingText: {
+        color: theme.colors.primary,
+        fontWeight: 'bold'
+    }
+}));

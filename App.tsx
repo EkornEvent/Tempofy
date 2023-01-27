@@ -1,8 +1,7 @@
-import { useContext } from 'react';
 import { StyleSheet, SafeAreaView } from "react-native";
-import { AppContextProvider, AppContext} from './src/context/SpotifyContext';
-import { QueueContextProvider, QueueContext} from './src/context/QueueContext';
-import { NavigationContainer } from '@react-navigation/native';
+import { AppContextProvider} from './src/context/SpotifyContext';
+import { QueueContextProvider} from './src/context/QueueContext';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthenticateScreen } from './src/screens/Authenticate';
 import { WelcomeScreen } from './src/screens/Welcome';
@@ -14,18 +13,32 @@ import { ConnectionBar } from './src/components/ConnectionBar';
 import { TempoContextProvider } from './src/context/TempoContext';
 import { VolumeContextProvider } from './src/context/VolumeContext';
 import { NowPlayingContextProvider } from './src/context/NowPlayingContext';
+import { ThemeProvider } from '@rneui/themed';
+import { theme } from './src/helpers/theme';
 
 const Stack = createNativeStackNavigator();
+
+const NavigationTheme = {
+    ...DarkTheme,
+    dark: true,
+    colors: {
+        ...DarkTheme.colors,
+        background: theme.darkColors?.background ? theme.darkColors.background : '',
+        card: theme.darkColors?.background ? theme.darkColors.background : '',
+        primary: theme.darkColors?.primary ? theme.darkColors.primary : ''
+    },
+};
 
 export default function App() {
     return (
         <SafeAreaView style={styles.container}>
             <Providers>
-                <NavigationContainer>
+                <NavigationContainer theme={NavigationTheme}>
                     <NavigationRoutes />
                 </NavigationContainer>
                 <NowPlayingBar />
                 <ConnectionBar />
+                <AuthenticateScreen />
             </Providers>
         </SafeAreaView>
     )
@@ -33,7 +46,8 @@ export default function App() {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1
+        flex: 1,
+        backgroundColor: theme.darkColors?.background
     }
 });
 
@@ -42,35 +56,27 @@ type Props = {
 }
 
 const Providers = (props: Props) => (
-    <AppContextProvider>
-        <QueueContextProvider>
-            <SettingsContextProvider>
-                <TempoContextProvider>
-                    <VolumeContextProvider>
-                        <NowPlayingContextProvider>
-                            {props.children}
-                        </NowPlayingContextProvider>
-                    </VolumeContextProvider>
-                </TempoContextProvider>
-            </SettingsContextProvider>
-        </QueueContextProvider>
-    </AppContextProvider>
+    <ThemeProvider theme={theme}>
+        <AppContextProvider>
+            <QueueContextProvider>
+                <SettingsContextProvider>
+                    <TempoContextProvider>
+                        <VolumeContextProvider>
+                            <NowPlayingContextProvider>
+                                {props.children}
+                            </NowPlayingContextProvider>
+                        </VolumeContextProvider>
+                    </TempoContextProvider>
+                </SettingsContextProvider>
+            </QueueContextProvider>
+        </AppContextProvider>
+    </ThemeProvider>
 )
 
-const NavigationRoutes = () => {
-    const { isConnected } = useContext(AppContext);
-  
-    return (
-        <Stack.Navigator>
-            {isConnected ? (
-            <>
-                <Stack.Screen name="Home" component={WelcomeScreen} />
-                <Stack.Screen name="Playlist" component={PlaylistScreen} />
-                <Stack.Screen name="Tracks" component={TrackScreen} />
-            </>
-        ):(
-            <Stack.Screen name="Welcome" component={AuthenticateScreen} />
-        )}
-        </Stack.Navigator>
-    )
-}
+const NavigationRoutes = () => (
+    <Stack.Navigator>
+        <Stack.Screen name="Home" component={WelcomeScreen} />
+        <Stack.Screen name="Playlist" component={PlaylistScreen} />
+        <Stack.Screen name="Tracks" component={TrackScreen} />
+    </Stack.Navigator>
+)

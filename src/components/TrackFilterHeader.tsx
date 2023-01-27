@@ -1,16 +1,18 @@
 import React, { useContext, useEffect, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { Slider, Icon, Text } from '@rneui/themed';
+import { TouchableOpacity, View } from "react-native";
+import { Slider, Icon, Text, makeStyles } from '@rneui/themed';
 import { TrackObject } from "../helpers/types";
 import { SettingsContext } from "../context/SettingsContext";
+import { Background } from "./Background";
 
-export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: (value: number) => void, onShuffle: () => void }> = ({
+export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (value: number) => void, onSlidingComplete: (value: number) => void, onShuffle: () => void }> = ({
     data,
-    onFilterTracks,
+    onValueChange,
+    onSlidingComplete,
     onShuffle
   }) => {
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
-    
+    const styles = useStyles();
     const [currentValue, setCurrentValue] = useState<number>(50);
     const [min, setMin] = useState<number>(0);
     const [max, setMax] = useState<number>(100);
@@ -27,6 +29,12 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
         }
     },[data]);
 
+    const incrementValue = (increment: number) => {
+        const newValue = currentValue + increment;
+        onValueChange(newValue);
+        setCurrentValue(newValue);
+    }
+
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
     }
@@ -38,17 +46,21 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
     }
     
     return (
-        <>
+        <Background>
         <View style={styles.container}>
-            <Text style={styles.number}>{min}</Text>
+            <TouchableOpacity onPress={() => incrementValue(-1)}>
+                <Text style={styles.number}>{min} (-)</Text>
+            </TouchableOpacity>
             <Slider
-                maximumTrackTintColor="#ccc"
                 maximumValue={max}
-                minimumTrackTintColor="#222"
                 minimumValue={min}
                 onValueChange={value => {
+                    onValueChange(value);
                     setCurrentValue(value);
-                    onFilterTracks(value);
+                }}
+                onSlidingComplete={value => {
+                    onSlidingComplete(value);
+                    setCurrentValue(value);
                 }}
                 orientation="horizontal"
                 step={1}
@@ -62,22 +74,22 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
                         size={20}
                         reverse
                         containerStyle={{ bottom: 20, right: 20 }}
-                        color="#f50"
                     />
                     )
                 }}
-                thumbTintColor="#0c0"
                 thumbTouchSize={{ width: 40, height: 40 }}
                 trackStyle={{ height: 10, borderRadius: 20 }}
                 value={currentValue}
             />
-            <Text style={styles.number}>{max}</Text>
+            <TouchableOpacity onPress={() => incrementValue(1)}>
+                <Text style={styles.number}>{max} (+)</Text>
+            </TouchableOpacity>
         </View>
         <View style={styles.actions}>
             <TouchableOpacity style={styles.button} onPress={() => toggleAutoSkipMode()}>
                 <View>
-                <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
-                <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip timer' : 'Fade timer') : 'Play track'}</Text>
+                <Icon size={30} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
+                <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip' : 'Fade') : 'Play'}</Text>
                 </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.shuffle} onPress={onShuffle}>
@@ -91,17 +103,15 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onFilterTracks: 
                 </View>
             </TouchableOpacity>
         </View>
-        </>
+        </Background>
     )
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
     container: {
         paddingTop: 20,
         paddingBottom: 20,
-        backgroundColor: 'lightgreen',
-        flexDirection: 'row',
-        flex: 1
+        flexDirection: 'row'
     },
     number: {
         padding: 14
@@ -115,11 +125,12 @@ const styles = StyleSheet.create({
     shuffle: {
         flex: 2,
         alignItems: 'center',
-        backgroundColor: 'lightblue'
+        backgroundColor: theme.colors.primary
     },
     button: {
         flex: 1,
-        alignItems: 'center'
+        alignItems: 'center',
+        padding: 5
     }
-});
+}));
   

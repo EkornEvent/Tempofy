@@ -8,25 +8,26 @@ export const PlaylistListItem: React.FC<{ onPress?: (item: SpotifyApi.PlaylistOb
   }) => {
     const {
         name,
-        description
+        description,
+        images
     } = item;
-    
-    const chevron = true;
-    
+    const previewImage = images ? images[images.length-1] : null;
     return (
         <ListItem 
             onPress={() => onPress && onPress(item)} 
             onLongPress={() => onLongPress && onLongPress(item)}
             bottomDivider
         >
-            <Avatar title={name}/>
+            {previewImage &&
+                <Avatar
+                    source={{ uri: previewImage.url }}
+                />
+            }
             <ListItem.Content>
                 <ListItem.Title>{name}</ListItem.Title>
                 <ListItem.Subtitle>{description}</ListItem.Subtitle>
             </ListItem.Content>
-            {chevron &&
-                <ListItem.Chevron />
-            }
+            <ListItem.Chevron />
         </ListItem>
     )
   }

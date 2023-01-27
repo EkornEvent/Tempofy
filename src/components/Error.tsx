@@ -1,5 +1,6 @@
 import React from "react";
 import { Text, StyleSheet, View } from "react-native";
+import { Background } from "./Background";
 
 type Props = {
   message: string;
@@ -7,16 +8,14 @@ type Props = {
 
 export const ErrorScreen = ({message}: Props) => {
   return (
-      <View style={styles.container}>
+      <Background style={styles.container}>
           <Text>{message}</Text>
-      </View>
+      </Background>
   )
 }
 
 const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: '#fff',
       alignItems: 'center',
       justifyContent: 'center',
     },
