@@ -34,19 +34,19 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
         const newValue = currentValue + increment;
         onValueChange(newValue);
         setCurrentValue(newValue);
-        analytics().logEvent('incrementValue');
+        analytics().logEvent('increment_tempo');
     }
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
-        analytics().logEvent('toggleAutoSkipMode');
+        analytics().logEvent('toggle_auto_skip_mode');
     }
 
     const toggleAutoSkipTime = () => {
         const step = 15000;
         const newValue = autoSkipTime + step
         setAutoSkipTime(newValue > 120000 ? step : newValue);
-        analytics().logEvent('toggleAutoSkipTime');
+        analytics().logEvent('toggle_auto_skip_time');
     }
     
     return (
@@ -65,7 +65,7 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
                 onSlidingComplete={value => {
                     onSlidingComplete(value);
                     setCurrentValue(value);
-                    analytics().logEvent('setTempo', {value: value});
+                    analytics().logEvent('set_tempo', {value: value});
                 }}
                 orientation="horizontal"
                 step={1}

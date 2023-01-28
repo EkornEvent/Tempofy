@@ -56,12 +56,10 @@ export const TrackScreen = ({ route, navigation }: any) => {
         userSelectedTrack(item);
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
-        analytics().logEvent('clickTrack');
+        analytics().logEvent('click_track');
     }
 
     const handleShuffle = (play: boolean) => {
-        console.log('handleShuffle');
-        
         const array = shuffle([...filteredItems]);
         if(play) {
             const firstItem = array.shift();

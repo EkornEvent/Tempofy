@@ -17,7 +17,7 @@ export const AuthenticateScreen = () => {
     const handleClick = () => {
         setConnecting(true);
         authenticate();
-        analytics().logEvent('connectSpotify');
+        analytics().logEvent('connect_spotify');
     }
 
     useEffect(() => {

@@ -1,10 +1,11 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { AppContext } from "../context/SpotifyContext";
 import { Icon, makeStyles, Text } from '@rneui/themed';
 import { FullScreen } from "./FullScreen";
 import { NowPlayingContext } from "../context/NowPlayingContext";
 import { VolumeContext } from "../context/VolumeContext";
+import analytics from '@react-native-firebase/analytics';
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
@@ -19,12 +20,19 @@ export const NowPlayingBar = () => {
         return null;
     }
 
+    useEffect(() => {
+        if(modalVisible) {
+            analytics().logEvent('show_fullscreen');
+        }
+    },[modalVisible])
+
     const togglePlayPause = () => {
         if(playerState?.isPaused) {
             remote.resume();
         } else {
             remote.pause();
         }
+        analytics().logEvent('toggle_play_pause');
     }
 
     const getValidFadeTime = (value: number | null) => {
