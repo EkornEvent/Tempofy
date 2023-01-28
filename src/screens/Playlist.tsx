@@ -35,10 +35,6 @@ export const PlaylistScreen = ({ route, navigation }: any) => {
         }
     }, [isConnected]);
 
-    const separator = () => {
-        return <Divider orientation="vertical" />;
-    };
-
     if(loading) {
         return <LoadingScreen />
     }
@@ -49,7 +45,6 @@ export const PlaylistScreen = ({ route, navigation }: any) => {
 
     return (
         <FlatList
-            ItemSeparatorComponent={separator}
             data={items}
             renderItem={({ item }) => <PlaylistListItem
                 onPress={handleItemClick}

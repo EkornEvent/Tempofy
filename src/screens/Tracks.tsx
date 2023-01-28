@@ -80,10 +80,6 @@ export const TrackScreen = ({ route, navigation }: any) => {
         setFilteredItems(newFilteredTracks);
     }
 
-    const separator = () => {
-        return <Divider orientation="vertical" />;
-    };
-
     if(loading) {
         return <LoadingScreen />
     }
@@ -102,7 +98,6 @@ export const TrackScreen = ({ route, navigation }: any) => {
                     onShuffle={() => handleShuffle(true)}
                 />
             }
-            ItemSeparatorComponent={separator}
             keyExtractor={(item: TrackObject, index: number) => item.id+index.toString()}
             data={filteredItems}
             renderItem={({ item, index, separators }) => <TrackListItem

@@ -13,9 +13,10 @@ import { ConnectionBar } from './src/components/ConnectionBar';
 import { TempoContextProvider } from './src/context/TempoContext';
 import { VolumeContextProvider } from './src/context/VolumeContext';
 import { NowPlayingContextProvider } from './src/context/NowPlayingContext';
-import { ThemeProvider } from '@rneui/themed';
+import { Button, Icon, ThemeProvider } from '@rneui/themed';
 import { theme } from './src/helpers/theme';
 import { useKeepAwake } from 'expo-keep-awake';
+import { SettingScreen } from "./src/screens/Settings";
 
 const Stack = createNativeStackNavigator();
 
@@ -80,6 +81,18 @@ const NavigationRoutes = () => (
     <Stack.Navigator>
         <Stack.Screen name="Home" component={WelcomeScreen} />
         <Stack.Screen name="Playlist" component={PlaylistScreen} />
-        <Stack.Screen name="Tracks" component={TrackScreen} />
+        <Stack.Screen 
+            name="Tracks" 
+            component={TrackScreen} 
+            options={({ navigation, route }) => ({
+                headerRight: () => (
+                    <Icon
+                        name='settings'
+                        onPress={() => navigation.navigate('Settings')}
+                    />
+                )
+            })}
+        />
+        <Stack.Screen name="Settings" component={SettingScreen} />
     </Stack.Navigator>
 )

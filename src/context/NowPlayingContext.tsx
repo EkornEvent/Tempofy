@@ -1,4 +1,5 @@
 import React, {useState, createContext, useEffect, useContext} from 'react';
+import { PlayerState } from 'react-native-spotify-remote';
 import { SettingsContext } from '../context/SettingsContext';
 import { useInterval } from '../helpers/hooks';
 import { AutoSkipMode, TrackObject } from '../helpers/types';
@@ -28,22 +29,17 @@ export const NowPlayingContextProvider = (props: Props) => {
     const { playerState, remote } = useContext(AppContext);
     const { consumeNextInQueue, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
     const { fadeDown, fadeUp } = useContext(VolumeContext);
-    const { autoSkipMode, autoSkipTime, fadeTime } = useContext(SettingsContext);
+    const { introSkipTime, outroSkipTime, autoSkipMode, autoSkipTime, fadeTime, waitDuringPause } = useContext(SettingsContext);
     const [timeLeft, setTimeLeft] = useState<number | null>(autoSkipTime);
     const [waiting, setWaiting] = useState(false);
     const timerInterval = 100;
     const [updateInterval, setUpdateInterval] = useState<number | null>(timerInterval);
 
-    const waitDuringPause = fadeTime;
-
     useEffect(() => {
         if(!playerState) {
             return;
         }
-        
         setUpdateInterval(playerState.isPaused ? null : timerInterval);
-        
-        
         if(currentTrack && currentTrack.uri != playerState.track.uri) {
             console.log('currentTrack',currentTrack?.name, playerState.track.name);
             playNextInQueue();
@@ -122,6 +118,13 @@ export const NowPlayingContextProvider = (props: Props) => {
         
         if(canSkipNext) {
             await remote.skipToNext();
+            try {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                await remote.seek(introSkipTime);
+            } catch {
+                // could not seek
+                console.error('could not seek')
+            }
         } else {
             await remote.pause();
         }
@@ -135,7 +138,13 @@ export const NowPlayingContextProvider = (props: Props) => {
     const fadePause = async () => {
         setWaiting(true);
         await fadeDown();
+        const fadePlayerState = remote.getPlayerState();
         await new Promise(resolve => setTimeout(resolve, waitDuringPause));
+        fadePlayerState.then(response => {
+            if(response.playbackPosition + autoSkipTime + outroSkipTime > response.track.duration) {
+                playNextInQueue();
+            }
+        });
         resetCountDown();
         await fadeUp();
         setWaiting(false);

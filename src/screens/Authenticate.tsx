@@ -35,7 +35,7 @@ export const AuthenticateScreen = () => {
             Alert.alert('Spotify must be playing in the background')
         }
     },[error])
-
+    
     return (
         <Modal
             animationType="slide"

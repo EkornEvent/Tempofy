@@ -16,15 +16,15 @@ export const NowPlayingBar = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const secondsLeft = timeLeft ? Math.floor((timeLeft / 1000) % 60) : null;
 
-    if(!isConnected) {
-        return null;
-    }
-
     useEffect(() => {
         if(modalVisible) {
             analytics().logEvent('show_fullscreen');
         }
     },[modalVisible])
+
+    if(!isConnected) {
+        return null;
+    }
 
     const togglePlayPause = () => {
         if(playerState?.isPaused) {
