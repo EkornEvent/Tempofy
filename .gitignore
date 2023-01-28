@@ -34,6 +34,10 @@ local.properties
 *.iml
 android/service-key.json
 
+# Credentials
+GoogleService-Info.plist
+google-services.json
+
 # BUCK
 buck-out/
 \.buckd/

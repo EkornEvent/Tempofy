@@ -4,6 +4,7 @@ import { Slider, Icon, Text, makeStyles } from '@rneui/themed';
 import { TrackObject } from "../helpers/types";
 import { SettingsContext } from "../context/SettingsContext";
 import { Background } from "./Background";
+import analytics from '@react-native-firebase/analytics';
 
 export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (value: number) => void, onSlidingComplete: (value: number) => void, onShuffle: () => void }> = ({
     data,
@@ -33,16 +34,19 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
         const newValue = currentValue + increment;
         onValueChange(newValue);
         setCurrentValue(newValue);
+        analytics().logEvent('incrementValue');
     }
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
+        analytics().logEvent('toggleAutoSkipMode');
     }
 
     const toggleAutoSkipTime = () => {
         const step = 15000;
         const newValue = autoSkipTime + step
         setAutoSkipTime(newValue > 120000 ? step : newValue);
+        analytics().logEvent('toggleAutoSkipTime');
     }
     
     return (
@@ -61,6 +65,7 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
                 onSlidingComplete={value => {
                     onSlidingComplete(value);
                     setCurrentValue(value);
+                    analytics().logEvent('setTempo', {value: value});
                 }}
                 orientation="horizontal"
                 step={1}

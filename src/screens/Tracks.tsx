@@ -11,6 +11,7 @@ import { TrackFilterHeader } from "../components/TrackFilterHeader";
 import { TrackObject } from "../helpers/types";
 import { QueueContext } from "../context/QueueContext";
 import { NowPlayingContext } from "../context/NowPlayingContext";
+import analytics from '@react-native-firebase/analytics';
 
 export const TrackScreen = ({ route, navigation }: any) => {
     const { api, remote } = useContext(AppContext);
@@ -55,6 +56,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
         userSelectedTrack(item);
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
+        analytics().logEvent('clickTrack');
     }
 
     const handleShuffle = (play: boolean) => {
@@ -68,6 +70,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
             }
         }
         setQueue(array);
+        analytics().logEvent('shuffle');
     }
 
     const handleFilterTracks = (value: number) => {

@@ -15,6 +15,7 @@ import { VolumeContextProvider } from './src/context/VolumeContext';
 import { NowPlayingContextProvider } from './src/context/NowPlayingContext';
 import { ThemeProvider } from '@rneui/themed';
 import { theme } from './src/helpers/theme';
+import { useKeepAwake } from 'expo-keep-awake';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,8 @@ const NavigationTheme = {
 };
 
 export default function App() {
+    useKeepAwake();
+    
     return (
         <SafeAreaView style={styles.container}>
             <Providers>

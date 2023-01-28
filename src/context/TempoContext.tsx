@@ -1,22 +1,6 @@
 import React, {useEffect, useState, createContext} from 'react';
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue } from "firebase/database";
 import { TempoData } from '../helpers/types';
-
-// Initialize Firebase
-const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: "organic-poetry-135723.firebaseapp.com",
-    databaseURL: "https://organic-poetry-135723.firebaseio.com",
-    projectId: "organic-poetry-135723",
-    storageBucket: "organic-poetry-135723.appspot.com",
-    messagingSenderId: "319975246753",
-    appId: "1:319975246753:web:8e33bb82e85c1683a0d9e0",
-    measurementId: "G-35FD8Q66YK"
-};
-
-initializeApp(firebaseConfig);
-const db = getDatabase();
+import database from '@react-native-firebase/database';
 
 type Props = {
   children: React.ReactNode;
@@ -48,8 +32,9 @@ export const TempoContextProvider = (props: Props) => {
     const [selectedTempo, setSelectedTempo] = useState(null);
     
     useEffect(() => {
-        const tempoRef = ref(db, 'tempo');
-        onValue(tempoRef, (snapshot) => {
+        database()
+        .ref('tempo')
+        .on('value', snapshot => {
             const data = snapshot.val();
             setAllTempos(data);
             setLoading(false);

@@ -6,6 +6,7 @@ import { StyleSheet, Alert, Modal, Image, View } from "react-native";
 import { Button, Text } from '@rneui/themed';
 import { TempoContext } from '../context/TempoContext';
 import { Background } from '../components/Background';
+import analytics from '@react-native-firebase/analytics';
 
 export const AuthenticateScreen = () => {
     const { isConnected, authenticate, error } = useContext(AppContext);
@@ -16,6 +17,7 @@ export const AuthenticateScreen = () => {
     const handleClick = () => {
         setConnecting(true);
         authenticate();
+        analytics().logEvent('connectSpotify');
     }
 
     useEffect(() => {
