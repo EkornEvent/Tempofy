@@ -9,7 +9,6 @@ import { PlaylistScreen } from './src/screens/Playlist';
 import { NowPlayingBar } from './src/components/NowPlayingBar';
 import { TrackScreen } from './src/screens/Tracks';
 import { SettingsContextProvider } from './src/context/SettingsContext';
-import { ConnectionBar } from './src/components/ConnectionBar';
 import { TempoContextProvider } from './src/context/TempoContext';
 import { VolumeContextProvider } from './src/context/VolumeContext';
 import { NowPlayingContextProvider } from './src/context/NowPlayingContext';
@@ -41,7 +40,6 @@ export default function App() {
                     <NavigationRoutes />
                 </NavigationContainer>
                 <NowPlayingBar />
-                <ConnectionBar />
                 <AuthenticateScreen />
             </Providers>
         </SafeAreaView>
@@ -79,7 +77,13 @@ const Providers = (props: Props) => (
 
 const NavigationRoutes = () => (
     <Stack.Navigator>
-        <Stack.Screen name="Home" component={WelcomeScreen} />
+        <Stack.Screen 
+            name="Home" 
+            component={WelcomeScreen}
+            options={({ navigation, route }) => ({
+                title: 'Tempofy'
+            })}
+        />
         <Stack.Screen name="Playlist" component={PlaylistScreen} />
         <Stack.Screen 
             name="Tracks" 

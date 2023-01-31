@@ -29,18 +29,22 @@ type Props = {
 
 interface AppContext {
     authenticate: (options?: AuthOptions) => void;
-    remote: SpotifyRemoteApi,
+    remote: SpotifyRemoteApi;
     isConnected: boolean;
+    userPressedConnected: boolean;
+    setUserPressedConnected: (value: boolean) => void; 
     error?: string;
     playerState?: PlayerState;
-    api: SpotifyWebApi,
-    user: SpotifyApi.UserObjectPrivate
+    api: SpotifyWebApi;
+    user: SpotifyApi.UserObjectPrivate;
 }
 
 const defaultValue: AppContext = {
     authenticate: () => { },
     remote: {} as SpotifyRemoteApi,
     isConnected: false,
+    userPressedConnected: false,
+    setUserPressedConnected: () => {},
     api: spotifyWebApi,
     user: {} as SpotifyApi.UserObjectPrivate,
 }
@@ -49,6 +53,7 @@ export const AppContext = createContext(defaultValue);
 
 export const AppContextProvider = (props: Props) => {
     const [isConnected, setIsConnected] = useState(false);
+    const [userPressedConnected, setUserPressedConnected] = useState(false);
     const [error, setError] = useState<string | undefined>();
     const [token, setToken] = useState<string | null>(null);
     const [playerState, setPlayerState] = useState<PlayerState>();
@@ -135,6 +140,8 @@ export const AppContextProvider = (props: Props) => {
                 authenticate,
                 remote,
                 isConnected,
+                userPressedConnected,
+                setUserPressedConnected,
                 playerState,
                 error,
                 api: spotifyWebApi,

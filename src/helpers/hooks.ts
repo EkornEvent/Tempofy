@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Delay = number | null;
 type TimerHandler = (...args: any[]) => void;
@@ -51,3 +51,38 @@ export function useDeferredPromise<DeferType>() {
 
   return { defer, deferRef: deferRef.current };
 }
+
+export const useTempoCounter = () => {
+    const [count, setCount] = useState(0) ;
+    const [timeFirst, setTimeFirst] = useState(0);
+    const [timePrevious, setTimePrevious] = useState(0);
+    const [bpm, setBpm] = useState(0);
+
+    const tap = () => {
+        console.log('tap');
+        
+        const timeSeconds = new Date();
+        const time = timeSeconds.getTime();
+    
+        //if its been 3 seconds since last click reset the counter & previous time
+        if (timePrevious !== 0 && time - timePrevious > 3000) {
+            setCount(0);
+            setTimePrevious(time);
+            return false;
+        }
+        //if first click set the initial time and count 
+        if (count === 0) {
+            setTimeFirst(time);
+            setCount(a => a+1);
+        } else {
+            const bpmAvg = (60000 * count) / (time - timeFirst);
+            let newBpm = Math.round(bpmAvg * 100) / 100;
+            setBpm(newBpm);
+            setCount(a => a+1);
+            setTimePrevious(time);
+        }
+    };
+  
+    return {bpm, tap}
+  }
+  

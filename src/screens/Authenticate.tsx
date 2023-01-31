@@ -9,7 +9,7 @@ import { Background } from '../components/Background';
 import analytics from '@react-native-firebase/analytics';
 
 export const AuthenticateScreen = () => {
-    const { isConnected, authenticate, error } = useContext(AppContext);
+    const { isConnected, userPressedConnected, authenticate, error } = useContext(AppContext);
     const {loading} = useContext(TempoContext);
     const [connecting, setConnecting] = useState(false);
     const [visible, setVisible] = useState(false);
@@ -25,9 +25,9 @@ export const AuthenticateScreen = () => {
             setConnecting(false);
         }
         setTimeout(() => {
-            setVisible(!isConnected);
+            setVisible(!isConnected && userPressedConnected);
         },500);
-    },[isConnected])
+    },[isConnected, userPressedConnected])
 
     useEffect(() => {
         if(error) {
@@ -35,7 +35,7 @@ export const AuthenticateScreen = () => {
             Alert.alert('Spotify must be playing in the background')
         }
     },[error])
-    
+
     return (
         <Modal
             animationType="slide"

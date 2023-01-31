@@ -5,22 +5,27 @@ import { AppContext } from '../context/SpotifyContext';
 import { Background } from '../components/Background';
 import * as Linking from 'expo-linking';
 import analytics from '@react-native-firebase/analytics';
+import { TempoCounter } from '../components/TempoCounter';
 
 export const WelcomeScreen = ({ navigation }: any) => {
-  const { user } = useContext(AppContext);
-  const { isConnected} = useContext(AppContext);
+  const { isConnected, user, setUserPressedConnected } = useContext(AppContext);
 
   const onReadMore = () => {
     Linking.openURL('https://www.patreon.com/tempofy');
     analytics().logEvent('read_more');
   }
+
+  const handleClick = () => {
+    setUserPressedConnected(true);
+  }
   
   return (
     <Background style={styles.container}>
+      <TempoCounter />
       {isConnected ? (
         <>
           <Text h3>Welcome {user.display_name}</Text>
-          <Text>Tempofy is free to use and has been from the start. We get by on donations from our amazing community to keep the lights on. If you love our product, please consider joining the cause!</Text>
+          <Text>Tempofy is free to use and has been from the start. We get by from our amazing community to keep the lights on. If you love our product, please consider joining the cause!</Text>
           <Button
               title="Read more"
               type="clear"
@@ -29,8 +34,17 @@ export const WelcomeScreen = ({ navigation }: any) => {
           <Button title="Show my playlists" onPress={() => navigation.navigate('Playlist')}/>
         </>
       ):(
-        <ActivityIndicator/>
+        <Button 
+            onPress={handleClick} 
+            title="View Spotify platlists"
+            icon={{
+                name: 'spotify',
+                type: 'font-awesome'
+            }}
+            iconRight
+        />
       )}
+      
     </Background>
   );
 }
