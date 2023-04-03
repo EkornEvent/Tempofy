@@ -8,6 +8,7 @@ import { WelcomeScreen } from './src/screens/Welcome';
 import { PlaylistScreen } from './src/screens/Playlist';
 import { NowPlayingBar } from './src/components/NowPlayingBar';
 import { TrackScreen } from './src/screens/Tracks';
+import { TempoScreen } from './src/screens/Tempo';
 import { SettingsContextProvider } from './src/context/SettingsContext';
 import { TempoContextProvider } from './src/context/TempoContext';
 import { VolumeContextProvider } from './src/context/VolumeContext';
@@ -88,6 +89,18 @@ const NavigationRoutes = () => (
         <Stack.Screen 
             name="Tracks" 
             component={TrackScreen} 
+            options={({ navigation, route }) => ({
+                headerRight: () => (
+                    <Icon
+                        name='settings'
+                        onPress={() => navigation.navigate('Settings')}
+                    />
+                )
+            })}
+        />
+        <Stack.Screen 
+            name="Tempo" 
+            component={TempoScreen} 
             options={({ navigation, route }) => ({
                 headerRight: () => (
                     <Icon

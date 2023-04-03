@@ -59,6 +59,10 @@ export const TrackScreen = ({ route, navigation }: any) => {
         analytics().logEvent('click_track');
     }
 
+    const handleTempoClick = async (item: TrackObject, index: number) => {
+        navigation.navigate('Tempo', {parent: item});
+    }
+
     const handleShuffle = (play: boolean) => {
         const array = shuffle([...filteredItems]);
         if(play) {
@@ -102,6 +106,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
             data={filteredItems}
             renderItem={({ item, index, separators }) => <TrackListItem
                 onPress={() => handleItemClick(item, index)}
+                onPressTempo={() => handleTempoClick(item, index)}
                 item={item}
             />}
         />

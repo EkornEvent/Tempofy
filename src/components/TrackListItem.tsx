@@ -7,10 +7,12 @@ import { TouchableOpacity } from "react-native";
 
 export const TrackListItem: React.FC<{ 
     onPress?: (item: TrackObject) => void, 
+    onPressTempo?: (item: TrackObject) => void, 
     item: TrackObject
  }> = ({
     item,
-    onPress
+    onPress,
+    onPressTempo
   }) => {
     const {
         name,
@@ -30,7 +32,9 @@ export const TrackListItem: React.FC<{
                     <ListItem.Title style={isPlaying ? styles.playingText : styles.defaultText}>{name}</ListItem.Title>
                     <ListItem.Subtitle>{artists && artists.map(artist => artist.name).join(' - ')}</ListItem.Subtitle>
                 </ListItem.Content>
-                <Text>{tempo}</Text>
+                <TouchableOpacity onPress={() => onPressTempo && onPressTempo(item)} style={{padding: 10}}>
+                    <Text>{tempo}</Text>
+                </TouchableOpacity>
             </ListItem>
         </TouchableOpacity>
     )

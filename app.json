@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tempofy",
     "slug": "Tempofy",
-    "version": "3.0",
+    "version": "3.1",
     "scheme": "tempofy-login",
     "orientation": "default",
     "icon": "./assets/icon.png",

@@ -59,8 +59,6 @@ export const useTempoCounter = () => {
     const [bpm, setBpm] = useState(0);
 
     const tap = () => {
-        console.log('tap');
-        
         const timeSeconds = new Date();
         const time = timeSeconds.getTime();
     
