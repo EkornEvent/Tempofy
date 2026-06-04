@@ -66,9 +66,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
+          "image": "./assets/transparent-icon.png",
+          "imageWidth": 250,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#181920",
+          "dark": {
+            "image": "./assets/transparent-icon.png",
+            "backgroundColor": "#181920"
+          }
         }
       ],
       "expo-status-bar"
