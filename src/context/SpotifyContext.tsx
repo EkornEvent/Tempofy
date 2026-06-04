@@ -14,6 +14,7 @@ import { AppState } from 'react-native';
 import * as Linking from 'expo-linking';
 import SpotifyWebApi from 'spotify-web-api-node';
 import { PlayerState, PlaybackControls } from '../helpers/types';
+import { isAudioPlaying, isAudioActivityAvailable } from '../../modules/expo-audio-activity';
 
 const spotifyWebApi = new SpotifyWebApi();
 
@@ -297,6 +298,54 @@ export const AppContextProvider = (props: Props) => {
         });
         return () => sub.remove();
     }, []);
+
+    // Playback-gated auto-reconnect (native flag, no Web API). While
+    // authenticated, foreground, and disconnected, poll isAudioPlaying() — a
+    // free, synchronous native read (AVAudioSession.isOtherAudioPlaying /
+    // AudioManager.isMusicActive) — every 2s. While paused this is silent and
+    // costs nothing (no network, no Web API spam). When audio is playing (e.g.
+    // the user resumed via a Bluetooth remote, which Tempofy never sees
+    // otherwise) we run the wake path (authorizeAndPlay, same as the Settings
+    // button) to reattach.
+    //
+    // Gating on playback means a deliberate pause is never auto-resumed. The
+    // 2-consecutive-read debounce avoids triggering on the brief silent gap
+    // between tracks. The native flag is not Spotify-specific (any audio reads
+    // true), which is acceptable here since Tempofy users only play Spotify.
+    //
+    // No-op until the native module ships in a dev build: isAudioActivityAvailable
+    // is false on older binaries, so the effect returns immediately and nothing
+    // polls or reconnects automatically (the manual reconnect button still works).
+    useEffect(() => {
+        if (!token || remoteConnected || !isAudioActivityAvailable) return;
+        let attempting = false;
+        let playingStreak = 0;
+        const POLL_INTERVAL_MS = 2000;
+        const REQUIRED_STREAK = 2;
+        const tick = async () => {
+            if (attempting) return;
+            const accessToken = tokenRef.current;
+            if (!accessToken || AppState.currentState !== "active" || AppRemote.isConnected()) {
+                return;
+            }
+            playingStreak = isAudioPlaying() ? playingStreak + 1 : 0;
+            if (playingStreak < REQUIRED_STREAK) return;
+            attempting = true;
+            try {
+                const wake = authorizeAndPlay
+                    ? authorizeAndPlay(accessToken)
+                    : Linking.openURL("spotify://");
+                await Promise.resolve(wake);
+            } catch {
+                // Wake failed — try again on a later tick.
+            } finally {
+                attempting = false;
+                playingStreak = 0;
+            }
+        };
+        const interval = setInterval(tick, POLL_INTERVAL_MS);
+        return () => clearInterval(interval);
+    }, [token, remoteConnected]);
 
     const isConnectionError = (err: any) => {
         if (

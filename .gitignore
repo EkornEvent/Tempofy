@@ -5,7 +5,9 @@ yarn-error.log
 *.tgz
 .DS_Store
 *.log
-ios/
+# Anchor to the repo root so the generated prebuild dir is ignored but
+# local Expo modules' own ios/ source (modules/*/ios/) is still tracked.
+/ios/
 # If you eject your app, uncomment Xcode, Android Studio, Buck and Bundle below.
 
 # Xcode

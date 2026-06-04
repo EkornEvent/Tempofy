@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["AudioActivityModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.audioactivity.AudioActivityModule"]
+  }
+}
