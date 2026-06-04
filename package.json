@@ -22,7 +22,7 @@
     "@react-navigation/native-stack": "^6.9.12",
     "@rneui/base": "^5.0.0",
     "@rneui/themed": "^5.0.0",
-    "@wwdrew/expo-spotify-sdk": "github:johra/expo-spotify-sdk#app-remote-authorize-and-play-dist",
+    "@wwdrew/expo-spotify-sdk": "git+https://github.com/johra/expo-spotify-sdk.git#app-remote-authorize-and-play-dist",
     "expo": "^56.0.8",
     "expo-build-properties": "~56.0.16",
     "expo-dev-client": "~56.0.18",
