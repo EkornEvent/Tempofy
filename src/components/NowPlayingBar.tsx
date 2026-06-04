@@ -5,7 +5,7 @@ import { Icon, makeStyles, Text } from '@rneui/themed';
 import { FullScreen } from "./FullScreen";
 import { NowPlayingContext } from "../context/NowPlayingContext";
 import { VolumeContext } from "../context/VolumeContext";
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
@@ -18,7 +18,7 @@ export const NowPlayingBar = () => {
 
     useEffect(() => {
         if(modalVisible) {
-            analytics().logEvent('show_fullscreen');
+            logEvent(getAnalytics(),'show_fullscreen');
         }
     },[modalVisible])
 
@@ -32,7 +32,7 @@ export const NowPlayingBar = () => {
         } else {
             remote.pause();
         }
-        analytics().logEvent('toggle_play_pause');
+        logEvent(getAnalytics(),'toggle_play_pause');
     }
 
     const getValidFadeTime = (value: number | null) => {

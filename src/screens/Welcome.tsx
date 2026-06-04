@@ -4,7 +4,7 @@ import { Text, Button } from '@rneui/themed';
 import { AppContext } from '../context/SpotifyContext';
 import { Background } from '../components/Background';
 import * as Linking from 'expo-linking';
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { TempoCounter } from '../components/TempoCounter';
 
 export const WelcomeScreen = ({ navigation }: any) => {
@@ -12,7 +12,7 @@ export const WelcomeScreen = ({ navigation }: any) => {
 
   const onReadMore = () => {
     Linking.openURL('https://www.patreon.com/tempofy');
-    analytics().logEvent('read_more');
+    logEvent(getAnalytics(),'read_more');
   }
 
   const handleClick = () => {

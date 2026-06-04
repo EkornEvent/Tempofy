@@ -1,15 +1,28 @@
 import React, { useContext } from "react";
-import { FlatList } from "react-native";
-import { ListItem } from '@rneui/themed';
+import { FlatList, View, Alert } from "react-native";
+import { ListItem, Button } from '@rneui/themed';
 import { SettingsContext } from "../context/SettingsContext";
+import { AppContext } from "../context/SpotifyContext";
 
 export const SettingScreen = () => {
-    const { 
-        introSkipTime, setIntroSkipTime, 
-        outroSkipTime, setOutroSkipTime, 
-        fadeTime, setFadeTime, 
+    const {
+        introSkipTime, setIntroSkipTime,
+        outroSkipTime, setOutroSkipTime,
+        fadeTime, setFadeTime,
         waitDuringPause, setWaitDuringPause
     } = useContext(SettingsContext);
+    const { isConnected, authenticate, disconnect } = useContext(AppContext);
+
+    const onDisconnect = () => {
+        Alert.alert(
+            'Disconnect Spotify?',
+            'You will need to reconnect to keep using Tempofy.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Disconnect', style: 'destructive', onPress: () => { disconnect(); } },
+            ],
+        );
+    };
 
     const settings = [
         {
@@ -61,9 +74,27 @@ export const SettingScreen = () => {
     )
 
     return (
-        <FlatList
-            data={settings}
-            renderItem={renderItem}
-        />
+        <View style={{ flex: 1 }}>
+            <FlatList
+                data={settings}
+                renderItem={renderItem}
+            />
+            {isConnected ? (
+                <Button
+                    title="Disconnect Spotify"
+                    type="outline"
+                    onPress={onDisconnect}
+                    containerStyle={{ margin: 16 }}
+                />
+            ) : (
+                <Button
+                    title="Connect to Spotify"
+                    onPress={() => authenticate()}
+                    icon={{ name: 'spotify', type: 'font-awesome' }}
+                    iconRight
+                    containerStyle={{ margin: 16 }}
+                />
+            )}
+        </View>
     )
 }

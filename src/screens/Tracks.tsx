@@ -12,7 +12,7 @@ import { TrackFilterHeader } from "../components/TrackFilterHeader";
 import { TrackObject } from "../helpers/types";
 import { QueueContext } from "../context/QueueContext";
 import { NowPlayingContext } from "../context/NowPlayingContext";
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 
 export const TrackScreen = ({ route, navigation }: any) => {
     const { api, remote } = useContext(AppContext);
@@ -58,7 +58,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
         userSelectedTrack(item);
         const nextItems = filteredItems.filter((a,trackIndex) => trackIndex > index);
         setQueue(nextItems);
-        analytics().logEvent('click_track');
+        logEvent(getAnalytics(),'click_track');
     }
 
     const handleTempoClick = async (item: TrackObject, index: number) => {
@@ -77,7 +77,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
         } else {
             setQueue(shuffled);
         }
-        analytics().logEvent('shuffle');
+        logEvent(getAnalytics(),'shuffle');
     }
 
     const handleFilterTracks = (value: number) => {

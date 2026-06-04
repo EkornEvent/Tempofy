@@ -63,6 +63,7 @@ interface AppContext {
     errorKind?: ErrorKind;
     clearError: () => void;
     reconnect: () => Promise<void>;
+    disconnect: () => Promise<void>;
     playerState?: PlayerState;
     api: SpotifyWebApi;
     user: SpotifyApi.UserObjectPrivate;
@@ -86,6 +87,7 @@ const defaultValue: AppContext = {
     setUserPressedConnected: () => {},
     clearError: () => {},
     reconnect: async () => {},
+    disconnect: async () => {},
     api: spotifyWebApi,
     user: {} as SpotifyApi.UserObjectPrivate,
 }
@@ -202,11 +204,13 @@ export const AppContextProvider = (props: Props) => {
             setRemoteConnected(state === "connected");
         });
         const errSub = AppRemote.addListener("connectionError", ({message}) => {
-            // The SDK retries connecting and emits this repeatedly. Ignore unless the
-            // user actively initiated a connect, otherwise reloads spam alerts.
-            if (userPressedConnectedRef.current) {
-                reportError(message, "connection");
-            }
+            // App Remote emits this on every transient drop — the expected
+            // ~30s post-pause teardown, and the initial connect() failure that
+            // playUri recovers from via authorizeAndPlay. Surfacing a modal here
+            // spams "Spotify isn't connected" even while playback is fine. We do
+            // NOT alert from this ambient listener; a connection failure that
+            // blocks a user action is reported by that action (playUri/reconnect).
+            console.log('AppRemote connectionError', message);
         });
         return () => {
             stateSub.remove();
@@ -267,6 +271,17 @@ export const AppContextProvider = (props: Props) => {
         await Linking.openURL("spotify://").catch(() => {});
     };
 
+    // Log out: tear down the App Remote connection and clear the stored
+    // session. Dropping the token flips isConnected to false, which surfaces
+    // the Authenticate ("Connect to Spotify") screen for a fresh login.
+    const disconnect = async () => {
+        try { await AppRemote.disconnect(); } catch {}
+        await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+        setToken(null);
+        setUser({} as SpotifyApi.UserObjectPrivate);
+        clearError();
+    };
+
     // Silent reconnect when Tempofy returns to the foreground. Common flow:
     // user opens Spotify, starts playing, switches back here — connect() then
     // succeeds against a now-running Spotify. No playback started, no alert on
@@ -281,10 +296,42 @@ export const AppContextProvider = (props: Props) => {
         return () => sub.remove();
     }, []);
 
+    const isConnectionError = (err: any) => {
+        if (
+            err?.code === "CONNECTION_FAILED" ||
+            err?.code === "CONNECTION_LOST" ||
+            err?.code === "NOT_CONNECTED"
+        ) {
+            return true;
+        }
+        // The native connection-refused failure currently reaches JS with code
+        // "UNKNOWN" (expo doesn't surface the AppRemoteException code), so fall
+        // back to matching its message signature.
+        const msg = String(err?.message ?? "").toLowerCase();
+        return (
+            msg.includes("connection refused") ||
+            msg.includes("connection attempt failed") ||
+            msg.includes("stream error") ||
+            msg.includes("not connected")
+        );
+    };
+
     const remote: PlaybackControls = {
         playUri: async (uri) => {
-            await ensureRemoteConnected();
-            await Player.play(SpotifyURI.from(uri));
+            try {
+                await ensureRemoteConnected();
+                await Player.play(SpotifyURI.from(uri));
+            } catch (err: any) {
+                // Spotify was suspended (CONNECTION_FAILED / Connection refused).
+                // If the SDK supports it, wake Spotify and play the track in one
+                // step instead of bubbling up an unrecoverable connection error.
+                const accessToken = tokenRef.current;
+                if (authorizeAndPlay && accessToken && isConnectionError(err)) {
+                    await authorizeAndPlay(accessToken, uri);
+                    return;
+                }
+                throw err;
+            }
         },
         pause: async () => {
             await ensureRemoteConnected();
@@ -330,6 +377,7 @@ export const AppContextProvider = (props: Props) => {
                 errorKind,
                 clearError,
                 reconnect,
+                disconnect,
                 api: spotifyWebApi,
                 user
             }}

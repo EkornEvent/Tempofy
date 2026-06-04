@@ -3,8 +3,8 @@ import { View, SafeAreaView, TouchableOpacity, ScrollView } from "react-native";
 import { Button, makeStyles, Text } from '@rneui/themed';
 import { Background } from '../components/Background';
 import { useTempoCounter } from '../helpers/hooks';
-import database from '@react-native-firebase/database';
-import analytics from '@react-native-firebase/analytics';
+import { getDatabase, ref, set } from '@react-native-firebase/database';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { AppContext } from '../context/SpotifyContext';
 
 export const TempoScreen = ({ route, navigation }: any) => {
@@ -18,11 +18,9 @@ export const TempoScreen = ({ route, navigation }: any) => {
     const onChangeTempo = () => {
         setLoading(true);
         const newTempo = Math.floor(bpm);
-        analytics().logEvent('update_tempo', {value: newTempo});
+        logEvent(getAnalytics(), 'update_tempo', {value: newTempo});
         var updatedAt = new Date().toISOString();
-        database()
-        .ref('/tempo/'+track.id)
-        .set({
+        set(ref(getDatabase(), '/tempo/'+track.id), {
             tempo: newTempo,
             updatedAt: updatedAt,
             updatedBy: user.id

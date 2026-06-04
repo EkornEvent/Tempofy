@@ -1,6 +1,6 @@
 import React, {useEffect, useState, createContext} from 'react';
 import { TempoData } from '../helpers/types';
-import database from '@react-native-firebase/database';
+import { getDatabase, ref, onValue } from '@react-native-firebase/database';
 
 type Props = {
   children: React.ReactNode;
@@ -32,13 +32,13 @@ export const TempoContextProvider = (props: Props) => {
     const [selectedTempo, setSelectedTempo] = useState(null);
     
     useEffect(() => {
-        const ref = database().ref('tempo');
-        const onValue = ref.on('value', snapshot => {
+        const tempoRef = ref(getDatabase(), 'tempo');
+        const unsubscribe = onValue(tempoRef, snapshot => {
             const data = snapshot.val();
             setAllTempos(data);
             setLoading(false);
         });
-        return () => ref.off('value', onValue);
+        return () => unsubscribe();
     },[]);
     
     return (

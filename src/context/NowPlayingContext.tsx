@@ -144,11 +144,19 @@ export const NowPlayingContextProvider = (props: Props) => {
         isTransitioningRef.current = true;
         setWaiting(true);
         setCurrentTrack(undefined);
-        await remote.playUri(item.uri);
-        setCurrentTrack(item);
-        setWaiting(false);
-        isTransitioningRef.current = false;
-        resetCountDown();
+        try {
+            await remote.playUri(item.uri);
+            setCurrentTrack(item);
+            resetCountDown();
+        } catch (err) {
+            // Playback couldn't start (e.g. Spotify unreachable). Surface it for
+            // logs rather than crashing with an uncaught rejection; the UI drops
+            // out of the waiting state below so the user can retry.
+            console.log('playTrack failed', err);
+        } finally {
+            setWaiting(false);
+            isTransitioningRef.current = false;
+        }
     }
 
     const skipToNext = async (useFade?: boolean) => {

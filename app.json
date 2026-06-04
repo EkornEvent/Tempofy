@@ -7,11 +7,6 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/65c3cf09-acee-44cf-8616-d466c689e474"
@@ -68,7 +63,14 @@
       "@react-native-vector-icons/material-icons",
       "@react-native-vector-icons/material-design-icons",
       "@react-native-vector-icons/fontawesome",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       "expo-status-bar"
     ],
     "runtimeVersion": {
