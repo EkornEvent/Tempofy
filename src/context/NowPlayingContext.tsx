@@ -187,6 +187,22 @@ export const NowPlayingContextProvider = (props: Props) => {
         if(useFade) {
             await fadeDown();
             await new Promise(resolve => setTimeout(resolve, waitDuringPause));
+            // Honour a pause made during the fade/wait. This is an *auto* skip,
+            // not a deliberate one. Check the event-driven ref and, because that
+            // event can lag, re-read the live player state too. If paused,
+            // restore the faded-down volume, re-park the countdown (resetCountDown
+            // leaves it parked while paused, so a resume re-triggers the skip) and
+            // bail out before touching playback.
+            const livePaused = await remote.getPlayerState()
+                .then(s => s ? s.isPaused : false)
+                .catch(() => false);
+            if(isPausedRef.current || livePaused) {
+                await fadeUp();
+                resetCountDown();
+                setWaiting(false);
+                isTransitioningRef.current = false;
+                return;
+            }
         }
         console.log('fade down complete');
 
@@ -219,15 +235,23 @@ export const NowPlayingContextProvider = (props: Props) => {
     const fadePause = async () => {
         setWaiting(true);
         await fadeDown();
-        const fadePlayerState = remote.getPlayerState();
         await new Promise(resolve => setTimeout(resolve, waitDuringPause));
-        fadePlayerState.then(response => {
-            if(response && response.playbackPosition + autoSkipTime + outroSkipTime > response.track.duration) {
-                playNextInQueue();
-            }
-        }).catch(err => {
+        // Read the *live* player state after the fade+wait, not a snapshot taken
+        // before it. The user can pause during the fade, and the App Remote's
+        // pause event reaches our isPausedRef asynchronously (sometimes after
+        // this point) — so consult the fresh state too. If playback is paused,
+        // the pause was deliberate (Fade mode advances *before* the natural end,
+        // while still playing), so defer to the user and don't auto-advance.
+        let response;
+        try {
+            response = await remote.getPlayerState();
+        } catch (err) {
             console.error('fadePause getPlayerState failed', err);
-        });
+        }
+        const paused = isPausedRef.current || (response ? response.isPaused : false);
+        if(!paused && response && response.playbackPosition + autoSkipTime + outroSkipTime > response.track.duration) {
+            playNextInQueue();
+        }
         resetCountDown();
         await fadeUp();
         setWaiting(false);

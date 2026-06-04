@@ -11,7 +11,7 @@ export const SettingScreen = () => {
         fadeTime, setFadeTime,
         waitDuringPause, setWaitDuringPause
     } = useContext(SettingsContext);
-    const { isConnected, authenticate, disconnect } = useContext(AppContext);
+    const { isConnected, remoteConnected, authenticate, disconnect, reconnect } = useContext(AppContext);
 
     const onDisconnect = () => {
         Alert.alert(
@@ -79,14 +79,8 @@ export const SettingScreen = () => {
                 data={settings}
                 renderItem={renderItem}
             />
-            {isConnected ? (
-                <Button
-                    title="Disconnect Spotify"
-                    type="outline"
-                    onPress={onDisconnect}
-                    containerStyle={{ margin: 16 }}
-                />
-            ) : (
+            {!isConnected ? (
+                // No token at all: log in.
                 <Button
                     title="Connect to Spotify"
                     onPress={() => authenticate()}
@@ -94,6 +88,31 @@ export const SettingScreen = () => {
                     iconRight
                     containerStyle={{ margin: 16 }}
                 />
+            ) : remoteConnected ? (
+                // Logged in and App Remote attached: the only action left is logout.
+                <Button
+                    title="Disconnect Spotify"
+                    type="outline"
+                    onPress={onDisconnect}
+                    containerStyle={{ margin: 16 }}
+                />
+            ) : (
+                // Logged in but App Remote dropped — the user reads this as
+                // "disconnected", so offer to reconnect, and keep logout reachable.
+                <View style={{ margin: 16 }}>
+                    <Button
+                        title="Reconnect Spotify"
+                        onPress={() => reconnect()}
+                        icon={{ name: 'spotify', type: 'font-awesome' }}
+                        iconRight
+                    />
+                    <Button
+                        title="Disconnect Spotify"
+                        type="clear"
+                        onPress={onDisconnect}
+                        containerStyle={{ marginTop: 8 }}
+                    />
+                </View>
             )}
         </View>
     )

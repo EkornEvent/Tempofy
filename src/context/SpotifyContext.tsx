@@ -57,6 +57,7 @@ interface AppContext {
     authenticate: (options?: AuthOptions) => void;
     remote: PlaybackControls;
     isConnected: boolean;
+    remoteConnected: boolean;
     userPressedConnected: boolean;
     setUserPressedConnected: (value: boolean) => void;
     error?: string;
@@ -83,6 +84,7 @@ const defaultValue: AppContext = {
     authenticate: () => { },
     remote: noopControls,
     isConnected: false,
+    remoteConnected: false,
     userPressedConnected: false,
     setUserPressedConnected: () => {},
     clearError: () => {},
@@ -370,6 +372,7 @@ export const AppContextProvider = (props: Props) => {
                 authenticate,
                 remote,
                 isConnected,
+                remoteConnected,
                 userPressedConnected,
                 setUserPressedConnected,
                 playerState,
