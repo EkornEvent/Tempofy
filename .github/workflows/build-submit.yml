@@ -34,5 +34,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Restore GoogleService-Info.plist
+        run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > GoogleService-Info.plist
+
       - name: Build and submit to App Store
         run: eas build --platform ios --profile production --non-interactive --auto-submit
