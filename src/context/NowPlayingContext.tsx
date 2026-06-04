@@ -27,7 +27,7 @@ export const NowPlayingContext = createContext(defaultValue);
 export const NowPlayingContextProvider = (props: Props) => {
     const { playerState, remote } = useContext(AppContext);
     const { consumeNextInQueue, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
-    const { fadeDown, fadeUp, cancelFade } = useContext(VolumeContext);
+    const { fadeDown, cancelFade, restoreVolume } = useContext(VolumeContext);
     const { introSkipTime, outroSkipTime, autoSkipMode, autoSkipTime, fadeTime, waitDuringPause } = useContext(SettingsContext);
     const [timeLeft, setTimeLeft] = useState<number | null>(autoSkipTime);
     const [waiting, setWaiting] = useState(false);
@@ -42,6 +42,11 @@ export const NowPlayingContextProvider = (props: Props) => {
     // the tail of a fade) can read the *current* pause state instead of the
     // value captured when they started.
     const isPausedRef = useRef(false);
+    // Set when a pause interrupts an auto-fade and leaves the volume faded down.
+    // On a connected device the restoring fade-up can't take while paused (its
+    // setVolume writes are dropped), so we defer the restore to the moment
+    // playback actually resumes — see the resume branch below.
+    const pendingRestoreRef = useRef(false);
     // True while we're deliberately switching tracks (manual skip / userSelected).
     // The App Remote fires transient and trailing (old-track) playerStateChange
     // events during a switch; without this guard the auto-advance below misreads
@@ -52,6 +57,7 @@ export const NowPlayingContextProvider = (props: Props) => {
         if(!playerState) {
             return;
         }
+        const wasPaused = isPausedRef.current;
         isPausedRef.current = playerState.isPaused;
         if(playerState.isPaused) {
             if(endTimeRef.current !== null) {
@@ -60,6 +66,15 @@ export const NowPlayingContextProvider = (props: Props) => {
             }
             setUpdateInterval(null);
         } else {
+            if(wasPaused && pendingRestoreRef.current) {
+                // Playback just resumed (paused → playing) after a pause interrupted
+                // an auto-fade. Re-ramp the volume back up now that writes will
+                // actually take — otherwise a connected device stays stuck at the
+                // faded-down (silent) level. Gated on the transition so ordinary
+                // playing-state events during a fade don't restart the ramp. Go
+                // through the arming wrapper so a re-pause during this ramp re-arms.
+                fadeUpAndArmRestore();
+            }
             if(pausedRemainingRef.current !== null) {
                 endTimeRef.current = Date.now() + pausedRemainingRef.current;
                 pausedRemainingRef.current = null;
@@ -159,6 +174,33 @@ export const NowPlayingContextProvider = (props: Props) => {
         }
     }
 
+    // Live pause check that tolerates App Remote event lag: trust our ref if it
+    // already says paused, otherwise re-read the player state from the device.
+    const isPlaybackPaused = async () => {
+        if(isPausedRef.current) {
+            return true;
+        }
+        return remote.getPlayerState()
+            .then(s => s ? s.isPaused : false)
+            .catch(() => false);
+    };
+
+    // Run the restoring volume ramp and decide whether a restore still needs to
+    // happen on resume. Setting the flag *before* the ramp covers a resume that
+    // lands mid-fade (the transition handler re-ramps immediately); the live
+    // re-check *after* clears it when playback is running, since the ramp's writes
+    // already took. If still paused, the flag stays set so the eventual resume
+    // re-asserts the volume — on a connected device the ramp writes were dropped.
+    // Uses restoreVolume (a from-0 ramp that preempts any stuck fade) rather than
+    // fadeUp so a one-shot write at resume isn't dropped by the connected device.
+    const fadeUpAndArmRestore = async () => {
+        pendingRestoreRef.current = true;
+        await restoreVolume();
+        if(!(await isPlaybackPaused())) {
+            pendingRestoreRef.current = false;
+        }
+    };
+
     const skipToNext = async (useFade?: boolean) => {
         console.log('skipToNext');
 
@@ -197,7 +239,10 @@ export const NowPlayingContextProvider = (props: Props) => {
                 .then(s => s ? s.isPaused : false)
                 .catch(() => false);
             if(isPausedRef.current || livePaused) {
-                await fadeUp();
+                // Restore the faded-down volume. On a connected device the ramp's
+                // writes are dropped while paused, so arm a restore that fires when
+                // playback actually resumes.
+                await fadeUpAndArmRestore();
                 resetCountDown();
                 setWaiting(false);
                 isTransitioningRef.current = false;
@@ -225,7 +270,8 @@ export const NowPlayingContextProvider = (props: Props) => {
             // Only ramp back up when we actually faded down. A manual skip
             // leaves the volume untouched, so calling fadeUp() here would snap
             // it to 0 and ramp back up for no reason — an audible, jarring dip.
-            await fadeUp();
+            // A pause can land during this ramp too, so arm the resume restore.
+            await fadeUpAndArmRestore();
         }
         console.log('fade up complete');
         setWaiting(false);
@@ -253,7 +299,10 @@ export const NowPlayingContextProvider = (props: Props) => {
             playNextInQueue();
         }
         resetCountDown();
-        await fadeUp();
+        // A pause may already be in effect, or land during this ramp; on a
+        // connected device the writes are dropped while paused, so arm a restore
+        // that fires when playback resumes.
+        await fadeUpAndArmRestore();
         setWaiting(false);
     }
 
