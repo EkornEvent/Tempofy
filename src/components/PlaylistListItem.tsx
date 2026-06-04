@@ -11,10 +11,10 @@ export const PlaylistListItem: React.FC<{ onPress?: (item: SpotifyApi.PlaylistOb
         description,
         images
     } = item;
-    const previewImage = images ? images[images.length-1] : null;
+    const previewImage = images && images.length > 0 ? images[images.length-1] : null;
     return (
-        <ListItem 
-            onPress={() => onPress && onPress(item)} 
+        <ListItem
+            onPress={() => onPress && onPress(item)}
             onLongPress={() => onLongPress && onLongPress(item)}
             bottomDivider
         >

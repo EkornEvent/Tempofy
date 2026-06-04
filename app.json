@@ -47,7 +47,14 @@
       }
     },
     "plugins": [
-      "./spotify-plugin/index.js",
+      [
+        "@wwdrew/expo-spotify-sdk",
+        {
+          "clientID": "af12e293266d43f98e6cef548cd67197",
+          "scheme": "tempofy-login",
+          "host": "callback"
+        }
+      ],
       "@react-native-firebase/app",
       [
         "expo-build-properties",
@@ -56,7 +63,13 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "@react-native-vector-icons/ionicons",
+      "@react-native-vector-icons/material-icons",
+      "@react-native-vector-icons/material-design-icons",
+      "@react-native-vector-icons/fontawesome",
+      "expo-splash-screen",
+      "expo-status-bar"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

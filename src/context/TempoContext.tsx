@@ -32,13 +32,13 @@ export const TempoContextProvider = (props: Props) => {
     const [selectedTempo, setSelectedTempo] = useState(null);
     
     useEffect(() => {
-        database()
-        .ref('tempo')
-        .on('value', snapshot => {
+        const ref = database().ref('tempo');
+        const onValue = ref.on('value', snapshot => {
             const data = snapshot.val();
             setAllTempos(data);
             setLoading(false);
         });
+        return () => ref.off('value', onValue);
     },[]);
     
     return (

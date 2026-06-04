@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FlatList, Alert } from "react-native";
+import { FlatList, Alert, View, StyleSheet } from "react-native";
+import { Text } from '@rneui/themed';
 import { TrackListItem } from "../components/TrackListItem";
 import { AppContext} from '../context/SpotifyContext';
 import { TempoContext} from '../context/TempoContext';
@@ -22,6 +23,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const { allTempos, selectedTempo, setSelectedTempo } = useContext(TempoContext);
     const { setQueue, } = useContext(QueueContext);
     const { userSelectedTrack } = useContext(NowPlayingContext);
+    const [slideValue, setSlideValue] = useState<number | null>(null);
 
     useEffect(() => {
         navigation.setOptions({ title: route.params.parent.name })
@@ -64,14 +66,17 @@ export const TrackScreen = ({ route, navigation }: any) => {
     }
 
     const handleShuffle = (play: boolean) => {
-        const array = shuffle([...filteredItems]);
+        const shuffled = shuffle([...filteredItems]);
+        setFilteredItems(shuffled);
         if(play) {
-            const firstItem = array.shift();
+            const [firstItem, ...rest] = shuffled;
             if(firstItem) {
                 userSelectedTrack(firstItem);
             }
+            setQueue(rest);
+        } else {
+            setQueue(shuffled);
         }
-        setQueue(array);
         analytics().logEvent('shuffle');
     }
 
@@ -93,22 +98,56 @@ export const TrackScreen = ({ route, navigation }: any) => {
     }
 
     return (
-        <FlatList
-            ListHeaderComponent={
-                <TrackFilterHeader 
-                    data={items} 
-                    onValueChange={handleFilterTracks}
-                    onSlidingComplete={setSelectedTempo}
-                    onShuffle={() => handleShuffle(true)}
-                />
-            }
-            keyExtractor={(item: TrackObject, index: number) => item.id+index.toString()}
-            data={filteredItems}
-            renderItem={({ item, index, separators }) => <TrackListItem
-                onPress={() => handleItemClick(item, index)}
-                onPressTempo={() => handleTempoClick(item, index)}
-                item={item}
-            />}
-        />
+        <View style={styles.container}>
+            <FlatList
+                ListHeaderComponent={
+                    <TrackFilterHeader
+                        data={items}
+                        onValueChange={handleFilterTracks}
+                        onSlidingComplete={setSelectedTempo}
+                        onShuffle={() => handleShuffle(true)}
+                        onSlideValue={setSlideValue}
+                    />
+                }
+                keyExtractor={(item: TrackObject) => item.id}
+                data={filteredItems}
+                renderItem={({ item, index, separators }) => <TrackListItem
+                    onPress={() => handleItemClick(item, index)}
+                    onPressTempo={() => handleTempoClick(item, index)}
+                    item={item}
+                />}
+            />
+            {slideValue !== null && (
+                <View style={styles.bubble} pointerEvents="none">
+                    <Text style={styles.bubbleValue}>{Math.round(slideValue)}</Text>
+                    <Text style={styles.bubbleUnit}>BPM</Text>
+                </View>
+            )}
+        </View>
     )
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1
+    },
+    bubble: {
+        position: 'absolute',
+        top: '50%',
+        alignSelf: 'center',
+        transform: [{ translateY: -70 }],
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        borderRadius: 16,
+        paddingVertical: 24,
+        paddingHorizontal: 40,
+        alignItems: 'center'
+    },
+    bubbleValue: {
+        fontSize: 64,
+        fontWeight: 'bold'
+    },
+    bubbleUnit: {
+        fontSize: 18,
+        opacity: 0.7
+    }
+});

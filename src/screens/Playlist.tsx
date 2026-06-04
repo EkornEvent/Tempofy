@@ -46,6 +46,7 @@ export const PlaylistScreen = ({ route, navigation }: any) => {
     return (
         <FlatList
             data={items}
+            keyExtractor={(item) => item.id}
             renderItem={({ item }) => <PlaylistListItem
                 onPress={handleItemClick}
                 item={item}

@@ -1,27 +1,53 @@
-import React, {useEffect, useState, createContext} from 'react';
+import React, {useEffect, useState, useRef, createContext} from 'react';
 import {
-    auth,
-    remote,
-    ApiConfig,
-    ApiScope,
-    SpotifyRemoteApi,
-    PlayerState} from 'react-native-spotify-remote';
-
+    Auth,
+    AuthError,
+    AppRemote,
+    Player,
+    SpotifyURI,
+    SpotifyScope,
+    SpotifySession,
+    PlayerState as SDKPlayerState,
+} from '@wwdrew/expo-spotify-sdk';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
+import * as Linking from 'expo-linking';
 import SpotifyWebApi from 'spotify-web-api-node';
-import { useInterval } from '../helpers/hooks';
+import { PlayerState, PlaybackControls } from '../helpers/types';
+
 const spotifyWebApi = new SpotifyWebApi();
 
-const SPOTIFY_CLIENT_ID = "af12e293266d43f98e6cef548cd67197";
-const SPOTIFY_REDIRECT_URL = "tempofy-login://callback";
+// `AppRemote.authorizeAndPlay` wakes a suspended Spotify (launching it), starts
+// playback, then connects — the only reliable way to recover from a
+// CONNECTION_FAILED where plain connect() can't revive Spotify. It's added in
+// @wwdrew/expo-spotify-sdk above 2.1.0 (see upstream PR); feature-detect so we
+// use it once the package ships and fall back to a deep-link wake until then.
+type AuthorizeAndPlay = (accessToken: string, uri?: string) => Promise<void>;
+const authorizeAndPlay: AuthorizeAndPlay | undefined = (
+    AppRemote as unknown as { authorizeAndPlay?: AuthorizeAndPlay }
+).authorizeAndPlay;
+
 const SPOTIFY_TOKEN_REFRESH_URL = "https://us-central1-organic-poetry-135723.cloudfunctions.net/endpoint/refresh/";
 const SPOTIFY_TOKEN_SWAP_URL = "https://us-central1-organic-poetry-135723.cloudfunctions.net/endpoint/swap/";
+const REFRESH_TOKEN_STORAGE_KEY = "@spotify:refreshToken";
+const SCOPES: SpotifyScope[] = [
+    "app-remote-control",
+    "streaming",
+    "user-read-private",
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-read-currently-playing",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "playlist-modify-private",
+    "playlist-modify-public",
+];
 
 interface AuthOptions {
-    playURI?: string;
     showDialog?: boolean;
-    autoConnect?: boolean;
-    authType?: ApiConfig["authType"]
 }
+
+export type ErrorKind = "connection" | "auth" | "generic";
 
 type Props = {
   children: React.ReactNode;
@@ -29,25 +55,51 @@ type Props = {
 
 interface AppContext {
     authenticate: (options?: AuthOptions) => void;
-    remote: SpotifyRemoteApi;
+    remote: PlaybackControls;
     isConnected: boolean;
     userPressedConnected: boolean;
-    setUserPressedConnected: (value: boolean) => void; 
+    setUserPressedConnected: (value: boolean) => void;
     error?: string;
+    errorKind?: ErrorKind;
+    clearError: () => void;
+    reconnect: () => Promise<void>;
     playerState?: PlayerState;
     api: SpotifyWebApi;
     user: SpotifyApi.UserObjectPrivate;
 }
 
+const noopControls: PlaybackControls = {
+    playUri: async () => undefined,
+    pause: async () => undefined,
+    resume: async () => undefined,
+    skipToNext: async () => undefined,
+    skipToPrevious: async () => undefined,
+    seek: async () => undefined,
+    getPlayerState: async () => undefined,
+};
+
 const defaultValue: AppContext = {
     authenticate: () => { },
-    remote: {} as SpotifyRemoteApi,
+    remote: noopControls,
     isConnected: false,
     userPressedConnected: false,
     setUserPressedConnected: () => {},
+    clearError: () => {},
+    reconnect: async () => {},
     api: spotifyWebApi,
     user: {} as SpotifyApi.UserObjectPrivate,
 }
+
+const mapSDKPlayerState = (s: SDKPlayerState): PlayerState => ({
+    isPaused: s.isPaused,
+    playbackPosition: s.playbackPosition,
+    track: {
+        uri: s.track.uri,
+        name: s.track.name,
+        duration: s.track.duration,
+        artist: { name: s.track.artist.name },
+    },
+});
 
 export const AppContext = createContext(defaultValue);
 
@@ -55,84 +107,215 @@ export const AppContextProvider = (props: Props) => {
     const [isConnected, setIsConnected] = useState(false);
     const [userPressedConnected, setUserPressedConnected] = useState(false);
     const [error, setError] = useState<string | undefined>();
+    const [errorKind, setErrorKind] = useState<ErrorKind | undefined>();
     const [token, setToken] = useState<string | null>(null);
+    const [remoteConnected, setRemoteConnected] = useState(false);
     const [playerState, setPlayerState] = useState<PlayerState>();
     const [user, setUser] = useState<SpotifyApi.UserObjectPrivate>({} as SpotifyApi.UserObjectPrivate);
-    const [updateInterval, setUpdateInterval] = useState<number | null>(100);
+    const tokenRef = useRef<string | null>(null);
+    const userPressedConnectedRef = useRef(false);
 
-    const authenticate = async () => {
+    useEffect(() => {
+        tokenRef.current = token;
+        setIsConnected(!!token);
+    }, [token]);
+
+    useEffect(() => {
+        userPressedConnectedRef.current = userPressedConnected;
+    }, [userPressedConnected]);
+
+    const reportError = (message: string, kind: ErrorKind) => {
+        setError(message);
+        setErrorKind(kind);
+    };
+
+    const clearError = () => {
         setError(undefined);
-        const config: ApiConfig = {
-            playURI: "",
-            clientID: SPOTIFY_CLIENT_ID,
-            redirectURL: SPOTIFY_REDIRECT_URL,
-            tokenRefreshURL: SPOTIFY_TOKEN_REFRESH_URL,
-            tokenSwapURL: SPOTIFY_TOKEN_SWAP_URL,
-            scopes: [
-                ApiScope.AppRemoteControlScope, 
-                ApiScope.UserReadPrivateScope, 
-                ApiScope.StreamingScope, 
-                ApiScope.PlaylistReadPrivateScope, 
-                ApiScope.PlaylistReadCollaborativeScope, 
-                ApiScope.PlaylistModifyPrivateScope, 
-                ApiScope.PlaylistModifyPublicScope
-              ]
-        };
+        setErrorKind(undefined);
+    };
 
+    const persistSession = async (session: SpotifySession) => {
+        if (session.refreshToken) {
+            await AsyncStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, session.refreshToken);
+        }
+        spotifyWebApi.setAccessToken(session.accessToken);
+        setToken(session.accessToken);
         try {
-            const { accessToken } = await auth.authorize(config);
-            await remote.connect(accessToken);
-            setToken(accessToken);
-        } catch (err:any) {
-            setError(err.message);
+            await AppRemote.connect(session.accessToken);
+        } catch (err: any) {
+            // Only surface connection errors when the user actively asked to connect.
+            // Silent background reconnects (e.g. on app reload while Spotify isn't
+            // playing) fail expectedly and must not spam alerts.
+            if (userPressedConnectedRef.current) {
+                reportError(err?.message ?? "Failed to connect to Spotify app", "connection");
+            }
+        }
+    };
+
+    const authenticate = async (options?: AuthOptions) => {
+        clearError();
+        try {
+            await Auth.cancelPending();
+            const session = await Auth.authenticate({
+                scopes: SCOPES,
+                tokenSwapURL: SPOTIFY_TOKEN_SWAP_URL,
+                tokenRefreshURL: SPOTIFY_TOKEN_REFRESH_URL,
+                showDialog: options?.showDialog,
+            });
+            await persistSession(session);
+        } catch (err: unknown) {
+            if (err instanceof AuthError && err.code === "USER_CANCELLED") {
+                return;
+            }
+            reportError(err instanceof Error ? err.message : String(err), "auth");
         }
     };
 
     useEffect(() => {
-        if(token) {
-            spotifyWebApi.setAccessToken(token);
-            spotifyWebApi.getMe()
-            .then(function(data) {
-                setUser(data.body as SpotifyApi.UserObjectPrivate);
-            }, function(err) {
-                setError(err.message);
-            });
-        }
-    },[token])
+        if (!token) return;
+        spotifyWebApi.getMe().then(
+            (data) => setUser(data.body as SpotifyApi.UserObjectPrivate),
+            (err) => reportError(err.message, "generic"),
+        );
+    }, [token]);
 
     useEffect(() => {
-        remote.isConnectedAsync().then(result => {
-            setIsConnected(result);
-        })
-        
-        setError(undefined);
-        remote.addListener("remoteConnected", onConnected);
-        remote.addListener("remoteDisconnected", onDisconnected);
-        remote.addListener("playerStateChanged", onPlayerStateChanged);
-		
-        auth.getSession().then((session) => {
-            if (session != undefined && session.accessToken != undefined) {
-                setToken(session.accessToken);
-                remote.connect(session.accessToken);
+        (async () => {
+            const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+            if (!refreshToken) return;
+            try {
+                const session = await Auth.refresh({
+                    refreshToken,
+                    tokenRefreshURL: SPOTIFY_TOKEN_REFRESH_URL,
+                    scopes: SCOPES,
+                });
+                await persistSession(session);
+            } catch {
+                await AsyncStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        setRemoteConnected(AppRemote.isConnected());
+        const stateSub = AppRemote.addListener("connectionStateChange", ({state}) => {
+            setRemoteConnected(state === "connected");
+        });
+        const errSub = AppRemote.addListener("connectionError", ({message}) => {
+            // The SDK retries connecting and emits this repeatedly. Ignore unless the
+            // user actively initiated a connect, otherwise reloads spam alerts.
+            if (userPressedConnectedRef.current) {
+                reportError(message, "connection");
             }
         });
-
         return () => {
-            remote.removeAllListeners();
+            stateSub.remove();
+            errSub.remove();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!remoteConnected) {
+            setPlayerState(undefined);
+            return;
         }
-    },[])
+        let mounted = true;
+        Player.getPlayerState().then(
+            (s) => { if (mounted) setPlayerState(mapSDKPlayerState(s)); },
+            () => {},
+        );
+        const sub = Player.addListener("playerStateChange", (s) => {
+            setPlayerState(mapSDKPlayerState(s));
+        });
+        return () => {
+            mounted = false;
+            sub.remove();
+        };
+    }, [remoteConnected]);
 
-    const onConnected = () => {
-        setIsConnected(true);
-    }
+    useEffect(() => {
+        return () => {
+            AppRemote.disconnect().catch(() => {});
+        };
+    }, []);
 
-    const onDisconnected = () => {
-        setIsConnected(false);
-    }
+    const ensureRemoteConnected = async () => {
+        if (AppRemote.isConnected()) return;
+        const accessToken = tokenRef.current;
+        if (!accessToken) {
+            throw new Error("Not authenticated with Spotify.");
+        }
+        await AppRemote.connect(accessToken);
+    };
 
-    const onPlayerStateChanged = (result: any) => {
-        setPlayerState(result[0] as PlayerState);
-    }
+    // User-initiated recovery from a CONNECTION_FAILED: wake Spotify and
+    // reconnect. Prefers authorizeAndPlay (revives a suspended Spotify in one
+    // step); otherwise deep-links to foreground Spotify and lets the AppState
+    // listener below complete the reconnect when the user returns.
+    const reconnect = async () => {
+        const accessToken = tokenRef.current;
+        if (!accessToken) return;
+        clearError();
+        if (authorizeAndPlay) {
+            try {
+                await authorizeAndPlay(accessToken);
+            } catch (err: any) {
+                reportError(err?.message ?? "Failed to reconnect to Spotify", "connection");
+            }
+            return;
+        }
+        await Linking.openURL("spotify://").catch(() => {});
+    };
+
+    // Silent reconnect when Tempofy returns to the foreground. Common flow:
+    // user opens Spotify, starts playing, switches back here — connect() then
+    // succeeds against a now-running Spotify. No playback started, no alert on
+    // failure (the user can still trigger reconnect() explicitly).
+    useEffect(() => {
+        const sub = AppState.addEventListener("change", (state) => {
+            if (state !== "active") return;
+            const accessToken = tokenRef.current;
+            if (!accessToken || AppRemote.isConnected()) return;
+            AppRemote.connect(accessToken).catch(() => {});
+        });
+        return () => sub.remove();
+    }, []);
+
+    const remote: PlaybackControls = {
+        playUri: async (uri) => {
+            await ensureRemoteConnected();
+            await Player.play(SpotifyURI.from(uri));
+        },
+        pause: async () => {
+            await ensureRemoteConnected();
+            await Player.pause();
+        },
+        resume: async () => {
+            await ensureRemoteConnected();
+            await Player.resume();
+        },
+        skipToNext: async () => {
+            await ensureRemoteConnected();
+            await Player.skipNext();
+        },
+        skipToPrevious: async () => {
+            await ensureRemoteConnected();
+            await Player.skipPrevious();
+        },
+        seek: async (positionMs) => {
+            await ensureRemoteConnected();
+            await Player.seekTo(positionMs);
+        },
+        getPlayerState: async () => {
+            try {
+                await ensureRemoteConnected();
+                const s = await Player.getPlayerState();
+                return mapSDKPlayerState(s);
+            } catch {
+                return undefined;
+            }
+        },
+    };
 
     return (
         <AppContext.Provider
@@ -144,12 +327,15 @@ export const AppContextProvider = (props: Props) => {
                 setUserPressedConnected,
                 playerState,
                 error,
+                errorKind,
+                clearError,
+                reconnect,
                 api: spotifyWebApi,
                 user
             }}
         >
             {props.children}
         </AppContext.Provider>
-    
+
     );
 };

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { AppContext} from '../context/SpotifyContext';
@@ -9,10 +9,11 @@ import { Background } from '../components/Background';
 import analytics from '@react-native-firebase/analytics';
 
 export const AuthenticateScreen = () => {
-    const { isConnected, userPressedConnected, authenticate, error } = useContext(AppContext);
+    const { isConnected, userPressedConnected, authenticate, error, errorKind, clearError, reconnect } = useContext(AppContext);
     const {loading} = useContext(TempoContext);
     const [connecting, setConnecting] = useState(false);
     const [visible, setVisible] = useState(false);
+    const alertVisibleRef = useRef(false);
 
     const handleClick = () => {
         setConnecting(true);
@@ -30,11 +31,24 @@ export const AuthenticateScreen = () => {
     },[isConnected, userPressedConnected])
 
     useEffect(() => {
-        if(error) {
+        if(error && !alertVisibleRef.current) {
             setConnecting(false);
-            Alert.alert('Spotify must be playing in the background')
+            alertVisibleRef.current = true;
+            const dismiss = () => {
+                alertVisibleRef.current = false;
+                clearError();
+            };
+            if (errorKind === 'connection') {
+                const connectionButtons = [
+                    { text: 'Cancel', style: 'cancel' as const, onPress: dismiss },
+                    { text: 'Open Spotify', onPress: () => { dismiss(); reconnect(); } },
+                ];
+                Alert.alert('Spotify isn\'t connected', 'Open Spotify to start playing, then come back — Tempofy reconnects automatically.', connectionButtons, { onDismiss: dismiss })
+            } else {
+                Alert.alert('Could not connect to Spotify', error, [{ text: 'OK', onPress: dismiss }], { onDismiss: dismiss })
+            }
         }
-    },[error])
+    },[error, errorKind, clearError, reconnect])
 
     return (
         <Modal
@@ -67,7 +81,7 @@ export const AuthenticateScreen = () => {
                     <Text>{loading ? "Downloading tempo..." : ""}</Text>
                 </View>
                 <View style={styles.bottom}>
-                    <Text>{Constants.expoConfig?.version} - {Constants.nativeAppVersion} ({Updates.releaseChannel})</Text>
+                    <Text>{Constants.expoConfig?.version} - {Constants.nativeAppVersion} ({Updates.channel})</Text>
                     <Text>{Updates.updateId}</Text>
                 </View>
             </Background>

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Modal, View, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions } from "react-native";
 import { Icon, Text } from '@rneui/themed';
-import { PlayerState } from "react-native-spotify-remote";
+import { PlayerState } from "../helpers/types";
 import { SettingsContext } from "../context/SettingsContext";
 import { AppContext } from "../context/SpotifyContext";
 import { QueueContext } from "../context/QueueContext";

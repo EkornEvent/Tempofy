@@ -4,8 +4,16 @@ import { TrackObject } from "./types";
 export const getUserPlaylists = async (api: any) => {
     let requests = await createAllRequests(api, 'getUserPlaylists', undefined, {}, 'items(uri,id,name,images)');
     const responses: any = await Promise.all(requests);
-    const allItems = responses.map((data: any) => data.body.items).flat();
-    return allItems;
+    const itemMap = new Map<string, any>();
+    for (const response of responses) {
+        const items = response?.body?.items || [];
+        for (const item of items) {
+            if (item && item.id && !itemMap.has(item.id)) {
+                itemMap.set(item.id, item);
+            }
+        }
+    }
+    return Array.from(itemMap.values());
 }
 
 export const getPlaylistTracks = async (api: SpotifyWebApi, allTempos: any, id: string) => {
@@ -25,8 +33,15 @@ export const getPlaylistTracks = async (api: SpotifyWebApi, allTempos: any, id: 
     } );
     
     const responses: any = await Promise.all(requests);
-    const allItems = responses.flat();
-    return allItems;
+    const itemMap = new Map<string, TrackObject>();
+    for (const items of responses) {
+        for (const item of (items || [])) {
+            if (item && item.id && !itemMap.has(item.id)) {
+                itemMap.set(item.id, item);
+            }
+        }
+    }
+    return Array.from(itemMap.values());
 }
 
 const createAllRequests = async (api: any, request: string, args: any, input: any, fields?: string, onRequestComplete?: any) => {

@@ -31,7 +31,10 @@ export const QueueContextProvider = (props: Props) => {
     const [currentTrack, setCurrentTrack] = useState<TrackObject>();
 
     const consumeNextInQueue = () => {
-        return queue.shift();
+        if(queue.length === 0) return undefined;
+        const [next, ...rest] = queue;
+        setQueue(rest);
+        return next;
     }
 
     useEffect(() => {

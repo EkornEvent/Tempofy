@@ -6,11 +6,12 @@ import { SettingsContext } from "../context/SettingsContext";
 import { Background } from "./Background";
 import analytics from '@react-native-firebase/analytics';
 
-export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (value: number) => void, onSlidingComplete: (value: number) => void, onShuffle: () => void }> = ({
+export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (value: number) => void, onSlidingComplete: (value: number) => void, onShuffle: () => void, onSlideValue?: (value: number | null) => void }> = ({
     data,
     onValueChange,
     onSlidingComplete,
-    onShuffle
+    onShuffle,
+    onSlideValue
   }) => {
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const styles = useStyles();
@@ -61,10 +62,13 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
                 onValueChange={value => {
                     onValueChange(value);
                     setCurrentValue(value);
+                    onSlideValue && onSlideValue(value);
                 }}
+                onSlidingStart={() => onSlideValue && onSlideValue(currentValue)}
                 onSlidingComplete={value => {
                     onSlidingComplete(value);
                     setCurrentValue(value);
+                    onSlideValue && onSlideValue(null);
                     analytics().logEvent('set_tempo', {value: value});
                 }}
                 orientation="horizontal"
@@ -98,7 +102,7 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
                 </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.shuffle} onPress={onShuffle}>
-                <Icon name='shuffle-variant' type='material-community'/>
+                <Icon name='shuffle-variant' type='material-design'/>
                 <Text>Play shuffle</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => toggleAutoSkipTime()}>

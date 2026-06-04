@@ -86,10 +86,13 @@ const NavigationRoutes = () => (
             })}
         />
         <Stack.Screen name="Playlist" component={PlaylistScreen} />
-        <Stack.Screen 
-            name="Tracks" 
-            component={TrackScreen} 
+        <Stack.Screen
+            name="Tracks"
+            component={TrackScreen}
             options={({ navigation, route }) => ({
+                // Disable swipe-back so dragging the full-width tempo slider near
+                // the screen edge doesn't get hijacked into a navigation pop.
+                gestureEnabled: false,
                 headerRight: () => (
                     <Icon
                         name='settings'
