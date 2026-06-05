@@ -1,0 +1,18 @@
+{
+  "hosting": {
+    "site": "tempofy",
+    "public": "public",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/privacy",
+        "destination": "/privacy-policy.html"
+      }
+    ]
+  }
+}

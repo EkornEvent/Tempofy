@@ -125,3 +125,5 @@ dist/
 
 # This is a yarn project — npm lock file is not used
 package-lock.json
+# Firebase
+.firebase/
