@@ -32,6 +32,8 @@
   "submit": {
     "production": {
       "ios": {
+        "appleId": "apple@vote4dance.com",
+        "appleTeamId": "56DM4V522S",
         "ascAppId": "947586369"
       }
     }
