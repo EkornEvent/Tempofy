@@ -7,7 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "patch-package && node scripts/copy-spotify-android-aar.js"
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -22,7 +22,7 @@
     "@react-navigation/native-stack": "^6.9.12",
     "@rneui/base": "^5.0.0",
     "@rneui/themed": "^5.0.0",
-    "@wwdrew/expo-spotify-sdk": "git+https://github.com/johra/expo-spotify-sdk.git#app-remote-authorize-and-play-dist",
+    "@wwdrew/expo-spotify-sdk": "^2.2.0",
     "expo": "^56.0.8",
     "expo-build-properties": "~56.0.16",
     "expo-dev-client": "~56.0.18",
