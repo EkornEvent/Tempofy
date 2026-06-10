@@ -79,6 +79,7 @@ const noopControls: PlaybackControls = {
     skipToPrevious: async () => undefined,
     seek: async () => undefined,
     getPlayerState: async () => undefined,
+    queue: async () => undefined,
 };
 
 const defaultValue: AppContext = {
@@ -403,6 +404,10 @@ export const AppContextProvider = (props: Props) => {
         seek: async (positionMs) => {
             await ensureRemoteConnected();
             await Player.seekTo(positionMs);
+        },
+        queue: async (uri) => {
+            await ensureRemoteConnected();
+            await Player.queue(SpotifyURI.from(uri));
         },
         getPlayerState: async () => {
             try {

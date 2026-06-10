@@ -17,8 +17,8 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
-    const { canSkipNext, currentTrack } = useContext(QueueContext);
-    const { skipToNext, timeLeft, isAutoPausing, cancelAutoResume } = useContext(NowPlayingContext);
+    const { canSkipNext, canSkipPrevious, currentTrack } = useContext(QueueContext);
+    const { skipToNext, skipToPrevious, timeLeft, isAutoPausing, cancelAutoResume } = useContext(NowPlayingContext);
     const { selectedTempo, setSelectedTempo } = useContext(TempoContext);
     const [userChangedTempo, setUserChangedTempo] = useState(false);
 
@@ -53,7 +53,10 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     }
 
     const onSkipPrevious = () => {
-        remote.skipToPrevious();
+        // App-driven previous through our own history, so it reliably goes back a
+        // track instead of restarting the current one (Spotify's skip-previous
+        // behaviour) — and applies the same intro-skip as a forward skip.
+        skipToPrevious();
     }
 
     const onChangeTempo = (increment: number) => {
@@ -83,7 +86,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
                         <Text h3 style={styles.coverText}>{playerState.track.artist.name}</Text>
                     </View>
                     <View style={styles.controlButtons}>
-                        <TouchableOpacity style={styles.controlIcon} onPress={() => onSkipPrevious()}>
+                        <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipPrevious ? 1 : 0.2}]} disabled={!canSkipPrevious} onPress={() => onSkipPrevious()}>
                             <Icon size={40} name={'skip-previous'}/>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>

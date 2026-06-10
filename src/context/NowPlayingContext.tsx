@@ -16,8 +16,16 @@ type Props = {
 // auto-advance forever.
 const TRANSITION_GUARD_TIMEOUT = 6000;
 
+// Spotify can't navigate to a previous track for bare-URI playback — its
+// previous button just restarts the current track. That restart is a backward
+// position jump on the same track, which we never do ourselves (our only seek is
+// forward to the intro), so a jump back of at least this many ms means the
+// remote's previous button was pressed → go back through our own history.
+const REMOTE_PREVIOUS_JUMP = 3000;
+
 interface NowPlayingContext {
     skipToNext: () => void;
+    skipToPrevious: () => void;
     userSelectedTrack: (track: TrackObject) => void;
     timeLeft: number | null;
     // True during the Pause-mode rest gap, while playback is paused but about to
@@ -30,6 +38,7 @@ interface NowPlayingContext {
 
 const defaultValue: NowPlayingContext = {
     skipToNext: () => undefined,
+    skipToPrevious: () => undefined,
     userSelectedTrack: () => undefined,
     timeLeft: null,
     isAutoPausing: false,
@@ -40,7 +49,7 @@ export const NowPlayingContext = createContext(defaultValue);
 
 export const NowPlayingContextProvider = (props: Props) => {
     const { playerState, remote } = useContext(AppContext);
-    const { consumeNextInQueue, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
+    const { consumeNextInQueue, goPrevious, peekNext, peekPrevious, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
     const { introSkipTime, outroSkipTime, autoSkipMode, autoSkipTime, pauseTime } = useContext(SettingsContext);
     const [timeLeft, setTimeLeft] = useState<number | null>(autoSkipTime);
     const [waiting, setWaiting] = useState(false);
@@ -90,6 +99,16 @@ export const NowPlayingContextProvider = (props: Props) => {
     const autoResumeCancelledRef = useRef(false);
     const pauseHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pauseHoldResolveRef = useRef<(() => void) | null>(null);
+    // The uri we last seeded into Spotify's native queue, to avoid re-queueing
+    // the same track repeatedly.
+    const seededNextUriRef = useRef<string | null>(null);
+    // Last observed playback position and its track uri, to spot the backward
+    // jump a remote skip-previous produces (see REMOTE_PREVIOUS_JUMP). The uri is
+    // tracked alongside so the jump is only measured between consecutive events
+    // on the SAME track — comparing across a track change would misread the new
+    // track's lower position as a backward jump.
+    const lastPositionRef = useRef<number>(0);
+    const lastPositionUriRef = useRef<string | null>(null);
 
     useEffect(() => {
         if(!playerState) {
@@ -97,14 +116,25 @@ export const NowPlayingContextProvider = (props: Props) => {
         }
         const wasPaused = isPausedRef.current;
         isPausedRef.current = playerState.isPaused;
+        // Measure a backward position jump only between consecutive events on the
+        // same track, then record this event's position/uri. Updated up-front for
+        // every event so a track change can't leave a stale position behind.
+        const sameTrackAsLast = lastPositionUriRef.current === playerState.track.uri;
+        const jumpedBack = sameTrackAsLast && playerState.playbackPosition < lastPositionRef.current - REMOTE_PREVIOUS_JUMP;
+        lastPositionRef.current = playerState.playbackPosition;
+        lastPositionUriRef.current = playerState.track.uri;
         if(isAutoPausingRef.current && wasPaused && !playerState.isPaused) {
-            // Play was pressed during the rest gap (remote, headset, or the
-            // button). The instructor is taking control mid-instruction, so
-            // block the play (cancelAutoResume re-pauses) and cancel the
-            // scheduled auto-resume rather than letting the next part start. A
-            // second play press, with the gap now over, resumes normally.
-            cancelAutoResume();
-            return;
+            if(currentTrack && playerState.track.uri === currentTrack.uri) {
+                // Same track resumed during the rest gap = a play press (remote,
+                // headset, or button). The instructor is taking control, so block
+                // the play (cancelAutoResume re-pauses) and cancel the scheduled
+                // auto-resume. A second play press, gap now over, resumes.
+                cancelAutoResume();
+                return;
+            }
+            // A different track started during the gap = a skip press. End the
+            // gap without re-pausing and fall through to follow the skip below.
+            endAutoPauseForSkip();
         }
         if(playerState.isPaused) {
             if(endTimeRef.current !== null) {
@@ -132,7 +162,13 @@ export const NowPlayingContextProvider = (props: Props) => {
                 isTransitioningRef.current = false;
             }
         } else if(currentTrack && currentTrack.uri != playerState.track.uri) {
-            playNextInQueue();
+            // A track change we didn't initiate: a remote/headset skip-next.
+            followExternalChange(playerState.track.uri);
+        } else if(currentTrack && jumpedBack && !isAutoPausingRef.current) {
+            // Same track, position jumped backward — Spotify restarting it for a
+            // remote skip-previous. Go back through our own history instead,
+            // since Spotify can't navigate previous here.
+            skipToPrevious();
         }
     },[playerState]);
 
@@ -152,6 +188,24 @@ export const NowPlayingContextProvider = (props: Props) => {
             onCountDownFinished();
         }
     }, [timeLeft]);
+
+    // Seed Spotify's own queue with the upcoming track so a media remote's
+    // skip-next has a real target — bare-URI playback otherwise leaves Spotify
+    // with nothing to skip to. Only in Skip/Pause modes: seeding also makes a
+    // track auto-advance at its natural end, which would break Off mode's
+    // "play one track and stop". When the remote skips, Spotify advances to the
+    // seeded track and the playerState effect follows it (followExternalChange).
+    useEffect(() => {
+        if(autoSkipMode === AutoSkipMode.Off || !currentTrack) {
+            seededNextUriRef.current = null;
+            return;
+        }
+        const next = peekNext();
+        if(next && next.uri !== seededNextUriRef.current) {
+            seededNextUriRef.current = next.uri;
+            remote.queue(next.uri).catch(err => console.error('queue next failed', err));
+        }
+    }, [currentTrack, autoSkipMode]);
 
     const resetCountDown = (positionMs: number = 0, durationMs?: number) => {
         console.log('resetCountDown');
@@ -228,6 +282,61 @@ export const NowPlayingContextProvider = (props: Props) => {
         if(slippedIntoPlaying) {
             remote.pause().catch(err => console.error('cancelAutoResume pause failed', err));
         }
+    };
+
+    // A skip (not a play) happened during the rest gap: end the gap and cancel
+    // the scheduled resume, but DON'T re-pause — we want the skipped-to track to
+    // play. The follow logic then syncs to whatever track Spotify landed on.
+    const endAutoPauseForSkip = () => {
+        autoResumeCancelledRef.current = true;
+        isAutoPausingRef.current = false;
+        setIsAutoPausing(false);
+        if(pauseHoldResolveRef.current) {
+            pauseHoldResolveRef.current();
+        }
+    };
+
+    // Spotify changed track on its own (remote/headset skip, or a natural
+    // end advancing into the seeded track). Sync our queue/history to match and
+    // land on the track the same way an app skip would, without re-playing it
+    // (Spotify is already playing it).
+    const followExternalChange = (observedUri: string) => {
+        const next = peekNext();
+        const prev = peekPrevious();
+        if(next && observedUri === next.uri) {
+            const advanced = consumeNextInQueue();
+            if(advanced) {
+                setCurrentTrack(advanced);
+                landOnExternalTrack(advanced);
+                return;
+            }
+        }
+        if(prev && observedUri === prev.uri) {
+            const back = goPrevious();
+            if(back) {
+                setCurrentTrack(back);
+                landOnExternalTrack(back);
+                return;
+            }
+        }
+        // Unknown change (user played something unrelated in Spotify, or a stale
+        // event) — take over by playing our own next track.
+        playNextInQueue();
+    };
+
+    // Apply our start behaviour to a track Spotify already moved to: jump to the
+    // intro-skip offset and (re)start the countdown. The transition guard is held
+    // so the seek's own events don't get misread as another change.
+    const landOnExternalTrack = async (item: TrackObject) => {
+        isTransitioningRef.current = true;
+        transitionStartRef.current = Date.now();
+        targetUriRef.current = item.uri;
+        try {
+            await remote.seek(introSkipTime);
+        } catch (err) {
+            console.error('follow seek failed', err);
+        }
+        resetCountDown(introSkipTime, item.duration_ms);
     };
 
     const onCountDownFinished = () => {
@@ -363,6 +472,41 @@ export const NowPlayingContextProvider = (props: Props) => {
         setWaiting(false);
     }
 
+    // App-driven previous (the in-app button). Goes back through our own history
+    // rather than relying on Spotify's skip-previous, which restarts the current
+    // track when more than a few seconds in. Same blip-free start as a skip.
+    const skipToPrevious = async () => {
+        console.log('skipToPrevious');
+        const prevItem = goPrevious();
+        if(!prevItem) {
+            return;
+        }
+        isTransitioningRef.current = true;
+        transitionStartRef.current = Date.now();
+        targetUriRef.current = prevItem.uri;
+        autoResumeCancelledRef.current = false;
+        setWaiting(true);
+        try {
+            setCurrentTrack(prevItem);
+            await remote.playUri(prevItem.uri);
+            await remote.pause();
+            await new Promise(resolve => setTimeout(resolve, 50));
+            await remote.seek(introSkipTime);
+            // Resume only if still paused — the App Remote rejects resume() with
+            // "The request failed." when nothing is paused (e.g. the pause above
+            // didn't take because play had only just started).
+            const response = await remote.getPlayerState().catch(() => undefined);
+            if(!response || response.isPaused) {
+                await remote.resume();
+            }
+        } catch (err) {
+            console.error('previous failed', err);
+            isTransitioningRef.current = false;
+        }
+        resetCountDown(introSkipTime, prevItem.duration_ms);
+        setWaiting(false);
+    }
+
     const pausePlayback = async () => {
         // Pause mode: when the countdown ends, pause playback, hold the rest gap
         // (pauseTime), then resume automatically.
@@ -403,6 +547,7 @@ export const NowPlayingContextProvider = (props: Props) => {
         <NowPlayingContext.Provider
             value={{
                 skipToNext,
+                skipToPrevious,
                 userSelectedTrack,
                 timeLeft,
                 isAutoPausing,
