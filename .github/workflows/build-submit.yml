@@ -5,8 +5,8 @@ on:
       - production
   workflow_dispatch:
 jobs:
-  build-submit:
-    name: EAS Build & Submit (iOS + Android)
+  ios:
+    name: EAS Build & Submit (iOS)
     runs-on: ubuntu-latest
     steps:
       - name: Check for EXPO_TOKEN
@@ -37,11 +37,51 @@ jobs:
       - name: Restore GoogleService-Info.plist
         run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > GoogleService-Info.plist
 
+      - name: Build and submit to App Store
+        run: eas build --platform ios --profile production --non-interactive --auto-submit --no-wait
+
+  android:
+    name: EAS Build & Submit (Android)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required secrets
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "Missing EXPO_TOKEN."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
+            echo "Missing GOOGLE_SERVICES_JSON_BASE64 (base64 of the Android google-services.json from Firebase)."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" ]; then
+            echo "Missing GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 (base64 of the Google Play service-account JSON key)."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: yarn
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Restore google-services.json
         run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > google-services.json
 
       - name: Restore Google Play service account key
         run: echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" | base64 --decode > google-play-service-account.json
 
-      - name: Build and submit (iOS + Android)
-        run: eas build --platform all --profile production --non-interactive --auto-submit --no-wait
+      - name: Build and submit to Play Store
+        run: eas build --platform android --profile production --non-interactive --auto-submit --no-wait
