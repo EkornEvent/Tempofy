@@ -35,6 +35,10 @@
         "appleId": "apple@vote4dance.com",
         "appleTeamId": "56DM4V522S",
         "ascAppId": "947586369"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "production"
       }
     }
   }

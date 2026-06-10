@@ -39,6 +39,7 @@ android/service-key.json
 # Credentials
 GoogleService-Info.plist
 google-services.json
+google-play-service-account.json
 
 # BUCK
 buck-out/
