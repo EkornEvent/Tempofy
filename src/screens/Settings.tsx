@@ -8,8 +8,8 @@ export const SettingScreen = () => {
     const {
         introSkipTime, setIntroSkipTime,
         outroSkipTime, setOutroSkipTime,
-        fadeTime, setFadeTime,
-        waitDuringPause, setWaitDuringPause
+        pauseTime, setPauseTime,
+        bpmRange, setBpmRange
     } = useContext(SettingsContext);
     const { isConnected, remoteConnected, authenticate, disconnect, reconnect } = useContext(AppContext);
 
@@ -24,30 +24,41 @@ export const SettingScreen = () => {
         );
     };
 
+    // `scale` is the multiplier between the value shown in the input and the
+    // stored value. Times are entered in seconds but stored in ms (scale 1000);
+    // the BPM range is a raw number (scale 1).
     const settings = [
         {
             key: 'introSkipTime',
             name: 'Intro skip time',
             value: introSkipTime,
-            dispatch: setIntroSkipTime
+            dispatch: setIntroSkipTime,
+            scale: 1000,
+            unit: 'sec'
         },
         {
             key: 'outroSkipTime',
             name: 'Outro skip time',
             value: outroSkipTime,
-            dispatch: setOutroSkipTime
+            dispatch: setOutroSkipTime,
+            scale: 1000,
+            unit: 'sec'
         },
         {
-            key: 'fadeTime',
-            name: 'Fade time',
-            value: fadeTime,
-            dispatch: setFadeTime
+            key: 'pauseTime',
+            name: 'Pause time',
+            value: pauseTime,
+            dispatch: setPauseTime,
+            scale: 1000,
+            unit: 'sec'
         },
         {
-            key: 'waitDuringPause',
-            name: 'Wait during pause',
-            value: waitDuringPause,
-            dispatch: setWaitDuringPause
+            key: 'bpmRange',
+            name: 'BPM range',
+            value: bpmRange,
+            dispatch: setBpmRange,
+            scale: 1,
+            unit: 'bpm'
         }
     ];
 
@@ -56,7 +67,7 @@ export const SettingScreen = () => {
     }
 
     const onChange = (setting: any, input: string) => {
-        const value = numberWithCommas(input)*1000;
+        const value = numberWithCommas(input)*setting.scale;
         setting.dispatch(value);
     }
 
@@ -65,11 +76,12 @@ export const SettingScreen = () => {
             <ListItem.Content>
                 <ListItem.Title>{item.name}</ListItem.Title>
             </ListItem.Content>
-            <ListItem.Input 
+            <ListItem.Input
                 keyboardType="decimal-pad"
-                placeholder={(item.value/1000).toString()} 
+                placeholder={(item.value/item.scale).toString()}
                 onChangeText={(value: any) => onChange(item, value)}
             />
+            <ListItem.Subtitle>{item.unit}</ListItem.Subtitle>
         </ListItem>
     )
 

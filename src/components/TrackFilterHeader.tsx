@@ -97,8 +97,8 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
         <View style={styles.actions}>
             <TouchableOpacity style={styles.button} onPress={() => toggleAutoSkipMode()}>
                 <View>
-                <Icon size={30} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
-                <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip' : 'Fade') : 'Play'}</Text>
+                <Icon size={30} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'pause') : 'timer-off'}/>
+                <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip' : 'Pause') : 'Play'}</Text>
                 </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.shuffle} onPress={onShuffle}>

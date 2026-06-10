@@ -5,7 +5,6 @@ import { PlayerState } from "../helpers/types";
 import { SettingsContext } from "../context/SettingsContext";
 import { AppContext } from "../context/SpotifyContext";
 import { QueueContext } from "../context/QueueContext";
-import { VolumeContext } from "../context/VolumeContext";
 import { NowPlayingContext } from "../context/NowPlayingContext";
 import { TempoContext } from "../context/TempoContext";
 import { Background } from "./Background";
@@ -19,7 +18,6 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
     const { canSkipNext, currentTrack } = useContext(QueueContext);
-    const { isFading } = useContext(VolumeContext);
     const { skipToNext, timeLeft } = useContext(NowPlayingContext);
     const { selectedTempo, setSelectedTempo } = useContext(TempoContext);
     const [userChangedTempo, setUserChangedTempo] = useState(false);
@@ -30,7 +28,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
         if(userChangedTempo) {
             setUserChangedTempo(false);
         }
-    },[isFading])
+    },[currentTrack])
 
     const toggleAutoSkipMode = () => {
         setAutoSkipMode(autoSkipMode == 2 ? 0 : autoSkipMode+1);
@@ -59,8 +57,8 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
         setUserChangedTempo(true);
     }
 
-    const getValidFadeTime = (value: number | null) => {
-        return value && value > 0 && !isFading ? value : '-'
+    const getValidTimeLeft = (value: number | null) => {
+        return value && value > 0 ? value : '-'
     }
 
     return (
@@ -109,12 +107,12 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
                     </View>
                     <View style={styles.controlButtons}>
                         <View style={styles.controlIcon}>
-                            <Text h4>{getValidFadeTime(secondsLeft)}</Text>
+                            <Text h4>{getValidTimeLeft(secondsLeft)}</Text>
                             <Text>sec</Text>
                         </View>
                         <TouchableOpacity style={styles.controlIcon} onPress={() => toggleAutoSkipMode()}>
-                            <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'volume-down') : 'timer-off'}/>
-                            <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip timer' : 'Fade timer') : 'Play track'}</Text>
+                            <Icon size={40} name={autoSkipMode > 0 ? (autoSkipMode == 1 ? 'timer' : 'pause') : 'timer-off'}/>
+                            <Text>{autoSkipMode > 0 ? (autoSkipMode == 1 ? 'Skip timer' : 'Pause timer') : 'Play track'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.controlIcon} onPress={() => toggleAutoSkipTime()}>
                             <View>

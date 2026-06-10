@@ -4,13 +4,11 @@ import { AppContext } from "../context/SpotifyContext";
 import { Icon, makeStyles, Text } from '@rneui/themed';
 import { FullScreen } from "./FullScreen";
 import { NowPlayingContext } from "../context/NowPlayingContext";
-import { VolumeContext } from "../context/VolumeContext";
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
     const { timeLeft } = useContext(NowPlayingContext);
-    const { isFading } = useContext(VolumeContext);
     const styles = useStyles();
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -35,8 +33,8 @@ export const NowPlayingBar = () => {
         logEvent(getAnalytics(),'toggle_play_pause');
     }
 
-    const getValidFadeTime = (value: number | null) => {
-        return value && value > 0 && !isFading ? (value+'s') : '-'
+    const getValidTimeLeft = (value: number | null) => {
+        return value && value > 0 ? (value+'s') : '-'
     }
 
     if(playerState) {
@@ -46,7 +44,7 @@ export const NowPlayingBar = () => {
                     <Icon name={'keyboard-arrow-up'}/>
                     <View style={styles.trackContainer}>
                         <Text>{playerState.track.artist.name} - {playerState.track.name}</Text>
-                        <Text>{getValidFadeTime(secondsLeft)}</Text>
+                        <Text>{getValidTimeLeft(secondsLeft)}</Text>
                     </View>
                     <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>
                         <Icon raised name={playerState.isPaused ? 'play-arrow' : 'pause'}/>

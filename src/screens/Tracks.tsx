@@ -12,6 +12,7 @@ import { TrackFilterHeader } from "../components/TrackFilterHeader";
 import { TrackObject } from "../helpers/types";
 import { QueueContext } from "../context/QueueContext";
 import { NowPlayingContext } from "../context/NowPlayingContext";
+import { SettingsContext } from "../context/SettingsContext";
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 
 export const TrackScreen = ({ route, navigation }: any) => {
@@ -23,6 +24,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const { allTempos, selectedTempo, setSelectedTempo } = useContext(TempoContext);
     const { setQueue, } = useContext(QueueContext);
     const { userSelectedTrack } = useContext(NowPlayingContext);
+    const { bpmRange } = useContext(SettingsContext);
     const [slideValue, setSlideValue] = useState<number | null>(null);
 
     useEffect(() => {
@@ -83,7 +85,7 @@ export const TrackScreen = ({ route, navigation }: any) => {
     const handleFilterTracks = (value: number) => {
         const newFilteredTracks = items.filter(track => {
             const minTempo = value;
-            const maxTempo = minTempo + 5;
+            const maxTempo = minTempo + bpmRange;
             return track.tempo && (track.tempo > minTempo) && (track.tempo < maxTempo)
         });
         setFilteredItems(newFilteredTracks);

@@ -5,7 +5,7 @@ export interface TrackObject extends SpotifyApi.TrackObjectSimplified {
 export enum AutoSkipMode {
     Off,
     Skip,
-    Fade,
+    Pause,
 }
 
 export interface TempoData {

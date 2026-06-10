@@ -81,6 +81,6 @@ export const useTempoCounter = () => {
         }
     };
   
-    return {bpm, tap}
+    return {bpm, tap, setBpm}
   }
   

@@ -10,11 +10,21 @@ import { AppContext } from '../context/SpotifyContext';
 export const TempoScreen = ({ route, navigation }: any) => {
     const { user } = useContext(AppContext);
     const [loading, setLoading] = useState(false);
-    const { bpm, tap } = useTempoCounter();
+    const { bpm, tap, setBpm } = useTempoCounter();
     const styles = useStyles();
 
     const track = route.params.parent;
-    
+
+    // The value currently shown: the tapped BPM, or the track's stored tempo
+    // before the user has tapped. Half/double operate on this so they can also
+    // correct a stored tempo that was detected at double- or half-time.
+    const currentTempo = bpm > 0 ? bpm : (track.tempo || 0);
+    const scaleTempo = (factor: number) => {
+        if(currentTempo > 0) {
+            setBpm(Math.round(currentTempo * factor * 100) / 100);
+        }
+    };
+
     const onChangeTempo = () => {
         setLoading(true);
         const newTempo = Math.floor(bpm);
@@ -28,6 +38,7 @@ export const TempoScreen = ({ route, navigation }: any) => {
         .then(() => {
             setLoading(false);
             track.tempo = Math.floor(newTempo);
+            navigation.goBack();
         });
     }
 
@@ -47,12 +58,28 @@ export const TempoScreen = ({ route, navigation }: any) => {
                     <View style={styles.coverContainer}>
                         <Text h1>{bpm > 0 ? bpm : track.tempo ? track.tempo : '-'}</Text>
                         <Text>bpm</Text>
-                        <TouchableOpacity 
-                            onPress={tap}
-                            style={styles.roundButton}
-                        >
-                            <Text h3>Tap</Text>
-                        </TouchableOpacity>
+                        <View style={styles.tapRow}>
+                            <TouchableOpacity
+                                onPress={() => scaleTempo(0.5)}
+                                disabled={!currentTempo}
+                                style={[styles.sideButton, !currentTempo && styles.sideButtonDisabled]}
+                            >
+                                <Text h4>÷2</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={tap}
+                                style={styles.roundButton}
+                            >
+                                <Text h3>Tap</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => scaleTempo(2)}
+                                disabled={!currentTempo}
+                                style={[styles.sideButton, !currentTempo && styles.sideButtonDisabled]}
+                            >
+                                <Text h4>×2</Text>
+                            </TouchableOpacity>
+                        </View>
                         <Text h2>Tap to get BPM</Text>
                     </View>
                     <Button 
@@ -90,6 +117,11 @@ const useStyles = makeStyles((theme) => ({
         padding: 10,
         width: 100
     },
+    tapRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center'
+    },
     roundButton: {
         width: 100,
         height: 100,
@@ -99,6 +131,17 @@ const useStyles = makeStyles((theme) => ({
         borderRadius: 100,
         backgroundColor: theme.colors.primary,
         margin: 30
+    },
+    sideButton: {
+        width: 64,
+        height: 64,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 64,
+        backgroundColor: theme.colors.secondary
+    },
+    sideButtonDisabled: {
+        opacity: 0.3
     },
     button: {
         padding: 30

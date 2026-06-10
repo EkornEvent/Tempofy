@@ -15,10 +15,10 @@ interface SettingsInterface {
     setAutoSkipTime: (value: number) => void,
     autoSkipMode: AutoSkipMode,
     setAutoSkipMode: (value: AutoSkipMode) => void,
-    fadeTime: number,
-    setFadeTime: (value: number) => void,
-    waitDuringPause: number,
-    setWaitDuringPause: (value: number) => void,
+    pauseTime: number,
+    setPauseTime: (value: number) => void,
+    bpmRange: number,
+    setBpmRange: (value: number) => void,
 }
 
 const defaults = {
@@ -30,10 +30,10 @@ const defaults = {
     setAutoSkipTime: () => {},
     autoSkipMode: AutoSkipMode.Skip,
     setAutoSkipMode: () => {},
-    fadeTime: 2000,
-    setFadeTime: () => {},
-    waitDuringPause: 2000,
-    setWaitDuringPause: () => {},
+    pauseTime: 5000,
+    setPauseTime: () => {},
+    bpmRange: 5,
+    setBpmRange: () => {},
 }
 
 export const SettingsContext = createContext<SettingsInterface>(defaults);
@@ -43,8 +43,8 @@ export const SettingsContextProvider = (props: Props) => {
     const [outroSkipTime, setOutroSkipTime] = useState(defaults.outroSkipTime);
     const [autoSkipTime, setAutoSkipTime] = useState(defaults.autoSkipTime);
     const [autoSkipMode, setAutoSkipMode] = useState(defaults.autoSkipMode);
-    const [fadeTime, setFadeTime] = useState(defaults.fadeTime);
-    const [waitDuringPause, setWaitDuringPause] = useState(defaults.waitDuringPause);
+    const [pauseTime, setPauseTime] = useState(defaults.pauseTime);
+    const [bpmRange, setBpmRange] = useState(defaults.bpmRange);
     const [initial, setInitial] = useState(true);
 
     const useStorageData = async (name: string, dispatch: any) => {
@@ -72,8 +72,8 @@ export const SettingsContextProvider = (props: Props) => {
         useStorageData('outroSkipTime', setOutroSkipTime);
         useStorageData('autoSkipTime', setAutoSkipTime);
         useStorageData('autoSkipMode', setAutoSkipMode);
-        useStorageData('fadeTime', setFadeTime);
-        useStorageData('waitDuringPause', setWaitDuringPause);
+        useStorageData('pauseTime', setPauseTime);
+        useStorageData('bpmRange', setBpmRange);
         setInitial(false);
     },[])
 
@@ -97,15 +97,15 @@ export const SettingsContextProvider = (props: Props) => {
 
     useEffect(() => {
         if(!initial) {
-            storeData('fadeTime',fadeTime);
+            storeData('pauseTime',pauseTime);
         }
-    },[fadeTime])
+    },[pauseTime])
 
     useEffect(() => {
         if(!initial) {
-            storeData('waitDuringPause',waitDuringPause);
+            storeData('bpmRange',bpmRange);
         }
-    },[waitDuringPause])
+    },[bpmRange])
 
     return (
         <SettingsContext.Provider
@@ -118,10 +118,10 @@ export const SettingsContextProvider = (props: Props) => {
                 setAutoSkipTime,
                 autoSkipMode,
                 setAutoSkipMode,
-                fadeTime,
-                setFadeTime,
-                waitDuringPause,
-                setWaitDuringPause
+                pauseTime,
+                setPauseTime,
+                bpmRange,
+                setBpmRange
             }}
         >
             {props.children}

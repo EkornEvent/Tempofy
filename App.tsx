@@ -11,7 +11,6 @@ import { TrackScreen } from './src/screens/Tracks';
 import { TempoScreen } from './src/screens/Tempo';
 import { SettingsContextProvider } from './src/context/SettingsContext';
 import { TempoContextProvider } from './src/context/TempoContext';
-import { VolumeContextProvider } from './src/context/VolumeContext';
 import { NowPlayingContextProvider } from './src/context/NowPlayingContext';
 import { Button, Icon, ThemeProvider } from '@rneui/themed';
 import { theme } from './src/helpers/theme';
@@ -64,11 +63,9 @@ const Providers = (props: Props) => (
             <QueueContextProvider>
                 <SettingsContextProvider>
                     <TempoContextProvider>
-                        <VolumeContextProvider>
-                            <NowPlayingContextProvider>
-                                {props.children}
-                            </NowPlayingContextProvider>
-                        </VolumeContextProvider>
+                        <NowPlayingContextProvider>
+                            {props.children}
+                        </NowPlayingContextProvider>
                     </TempoContextProvider>
                 </SettingsContextProvider>
             </QueueContextProvider>
