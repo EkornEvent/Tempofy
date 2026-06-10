@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 import { Slider, Icon, Text, makeStyles } from '@rneui/themed';
 import { TrackObject } from "../helpers/types";
@@ -18,6 +18,17 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
     const [currentValue, setCurrentValue] = useState<number>(50);
     const [min, setMin] = useState<number>(0);
     const [max, setMax] = useState<number>(100);
+    // Hides the floating value bubble a moment after a +/- press (a button has
+    // no "sliding complete" event to hide it).
+    const hideBubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if(hideBubbleTimer.current) {
+                clearTimeout(hideBubbleTimer.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         const allTempos: number[] = data.map(item => item.tempo ? item.tempo : 0).filter(tempo => tempo > 0);
@@ -35,6 +46,15 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
         const newValue = currentValue + increment;
         onValueChange(newValue);
         setCurrentValue(newValue);
+        // Show the same floating value bubble dragging shows, so the user sees
+        // what they're setting, then hide it shortly after.
+        if(onSlideValue) {
+            onSlideValue(newValue);
+            if(hideBubbleTimer.current) {
+                clearTimeout(hideBubbleTimer.current);
+            }
+            hideBubbleTimer.current = setTimeout(() => onSlideValue(null), 1000);
+        }
         logEvent(getAnalytics(),'increment_tempo');
     }
 
@@ -64,7 +84,12 @@ export const TrackFilterHeader: React.FC<{ data: TrackObject[], onValueChange: (
                     setCurrentValue(value);
                     onSlideValue && onSlideValue(value);
                 }}
-                onSlidingStart={() => onSlideValue && onSlideValue(currentValue)}
+                onSlidingStart={() => {
+                    if(hideBubbleTimer.current) {
+                        clearTimeout(hideBubbleTimer.current);
+                    }
+                    onSlideValue && onSlideValue(currentValue);
+                }}
                 onSlidingComplete={value => {
                     onSlidingComplete(value);
                     setCurrentValue(value);
