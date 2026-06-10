@@ -54,10 +54,6 @@ jobs:
             echo "Missing GOOGLE_SERVICES_JSON_BASE64 (base64 of the Android google-services.json from Firebase)."
             exit 1
           fi
-          if [ -z "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" ]; then
-            echo "Missing GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 (base64 of the Google Play service-account JSON key)."
-            exit 1
-          fi
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -79,9 +75,6 @@ jobs:
 
       - name: Restore google-services.json
         run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > google-services.json
-
-      - name: Restore Google Play service account key
-        run: echo "${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64 }}" | base64 --decode > google-play-service-account.json
 
       - name: Build and submit to Play Store
         run: eas build --platform android --profile production --non-interactive --auto-submit --no-wait
