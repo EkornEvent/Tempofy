@@ -8,7 +8,7 @@ import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 
 export const NowPlayingBar = () => {
     const { isConnected, playerState, remote } = useContext(AppContext);
-    const { timeLeft } = useContext(NowPlayingContext);
+    const { timeLeft, isAutoPausing, cancelAutoResume } = useContext(NowPlayingContext);
     const styles = useStyles();
 
     const [modalVisible, setModalVisible] = useState(false);
@@ -25,7 +25,11 @@ export const NowPlayingBar = () => {
     }
 
     const togglePlayPause = () => {
-        if(playerState?.isPaused) {
+        if(isAutoPausing) {
+            // The button shows as playing during the rest gap; a tap keeps it
+            // paused (blocks the auto-resume) so the instructor stays in control.
+            cancelAutoResume();
+        } else if(playerState?.isPaused) {
             remote.resume();
         } else {
             remote.pause();
@@ -47,7 +51,7 @@ export const NowPlayingBar = () => {
                         <Text>{getValidTimeLeft(secondsLeft)}</Text>
                     </View>
                     <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>
-                        <Icon raised name={playerState.isPaused ? 'play-arrow' : 'pause'}/>
+                        <Icon raised name={(isAutoPausing || !playerState.isPaused) ? 'pause' : 'play-arrow'}/>
                     </TouchableOpacity>
                 </TouchableOpacity>
                 <FullScreen 

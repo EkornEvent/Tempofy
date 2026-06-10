@@ -40,7 +40,9 @@ export const TrackScreen = ({ route, navigation }: any) => {
             handleFilterTracks(selectedTempo);
             handleShuffle(false);
         }
-    }, [selectedTempo]);
+        // bpmRange is a dependency so changing the range in Settings re-filters
+        // (and re-shuffles the queue) against the same selected tempo.
+    }, [selectedTempo, bpmRange]);
 
     const fetchItems = async () => {
         setLoading(true);

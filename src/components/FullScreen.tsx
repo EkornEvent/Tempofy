@@ -18,7 +18,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     const { autoSkipMode, setAutoSkipMode, autoSkipTime, setAutoSkipTime } = useContext(SettingsContext);
     const { remote } = useContext(AppContext);
     const { canSkipNext, currentTrack } = useContext(QueueContext);
-    const { skipToNext, timeLeft } = useContext(NowPlayingContext);
+    const { skipToNext, timeLeft, isAutoPausing, cancelAutoResume } = useContext(NowPlayingContext);
     const { selectedTempo, setSelectedTempo } = useContext(TempoContext);
     const [userChangedTempo, setUserChangedTempo] = useState(false);
 
@@ -41,7 +41,11 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
     }
 
     const togglePlayPause = () => {
-        if(playerState.isPaused) {
+        if(isAutoPausing) {
+            // Button shows as playing during the rest gap; a tap keeps it paused
+            // (blocks the auto-resume) so the instructor stays in control.
+            cancelAutoResume();
+        } else if(playerState.isPaused) {
             remote.resume();
         } else {
             remote.pause();
@@ -83,7 +87,7 @@ export const FullScreen: React.FC<{ playerState: PlayerState, visible: boolean, 
                             <Icon size={40} name={'skip-previous'}/>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.controlIcon} onPress={() => togglePlayPause()}>
-                            <Icon size={40} name={playerState.isPaused ? 'play-arrow' : 'pause'}/>
+                            <Icon size={40} name={(isAutoPausing || !playerState.isPaused) ? 'pause' : 'play-arrow'}/>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.controlIcon,{opacity: canSkipNext ? 1 : 0.2}]} disabled={!canSkipNext} onPress={() => skipToNext()}>
                             <Icon size={40} name={'skip-next'}/>

@@ -97,6 +97,12 @@ export const SettingsContextProvider = (props: Props) => {
 
     useEffect(() => {
         if(!initial) {
+            storeData('autoSkipMode',autoSkipMode);
+        }
+    },[autoSkipMode])
+
+    useEffect(() => {
+        if(!initial) {
             storeData('pauseTime',pauseTime);
         }
     },[pauseTime])

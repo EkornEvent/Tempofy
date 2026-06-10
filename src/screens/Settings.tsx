@@ -26,7 +26,9 @@ export const SettingScreen = () => {
 
     // `scale` is the multiplier between the value shown in the input and the
     // stored value. Times are entered in seconds but stored in ms (scale 1000);
-    // the BPM range is a raw number (scale 1).
+    // the BPM range is a raw number (scale 1). `min` is the lowest accepted
+    // value, in displayed units — it stops negative/zero entries that would
+    // break playback (negative timeouts, an empty/inverted BPM filter window).
     const settings = [
         {
             key: 'introSkipTime',
@@ -34,7 +36,8 @@ export const SettingScreen = () => {
             value: introSkipTime,
             dispatch: setIntroSkipTime,
             scale: 1000,
-            unit: 'sec'
+            unit: 'sec',
+            min: 0
         },
         {
             key: 'outroSkipTime',
@@ -42,7 +45,8 @@ export const SettingScreen = () => {
             value: outroSkipTime,
             dispatch: setOutroSkipTime,
             scale: 1000,
-            unit: 'sec'
+            unit: 'sec',
+            min: 0
         },
         {
             key: 'pauseTime',
@@ -50,7 +54,8 @@ export const SettingScreen = () => {
             value: pauseTime,
             dispatch: setPauseTime,
             scale: 1000,
-            unit: 'sec'
+            unit: 'sec',
+            min: 0
         },
         {
             key: 'bpmRange',
@@ -58,7 +63,8 @@ export const SettingScreen = () => {
             value: bpmRange,
             dispatch: setBpmRange,
             scale: 1,
-            unit: 'bpm'
+            unit: 'bpm',
+            min: 1
         }
     ];
 
@@ -67,7 +73,12 @@ export const SettingScreen = () => {
     }
 
     const onChange = (setting: any, input: string) => {
-        const value = numberWithCommas(input)*setting.scale;
+        const parsed = numberWithCommas(input);
+        // Ignore non-numeric / empty input rather than storing NaN.
+        if(isNaN(parsed)) {
+            return;
+        }
+        const value = Math.max(parsed, setting.min) * setting.scale;
         setting.dispatch(value);
     }
 

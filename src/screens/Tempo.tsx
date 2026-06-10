@@ -39,6 +39,13 @@ export const TempoScreen = ({ route, navigation }: any) => {
             setLoading(false);
             track.tempo = Math.floor(newTempo);
             navigation.goBack();
+        })
+        .catch((err: any) => {
+            // Write failed (offline, permissions). Drop out of the loading state
+            // so the Update button works again instead of spinning forever; keep
+            // the modal open so the user doesn't lose their tap.
+            console.error('update_tempo failed', err);
+            setLoading(false);
         });
     }
 

@@ -9,16 +9,31 @@ type Props = {
   children: React.ReactNode;
 }
 
+// How long the transition guard may stay set without the device confirming the
+// target track. Confirmation normally lands within ~1s, well before this, so in
+// normal operation the guard is cleared by confirmation; this only fires when
+// the confirmation never arrives, so the guard self-heals instead of disabling
+// auto-advance forever.
+const TRANSITION_GUARD_TIMEOUT = 6000;
+
 interface NowPlayingContext {
     skipToNext: () => void;
     userSelectedTrack: (track: TrackObject) => void;
-    timeLeft: number | null
+    timeLeft: number | null;
+    // True during the Pause-mode rest gap, while playback is paused but about to
+    // auto-resume. The now-playing button reads this to show as playing so the
+    // user can keep it paused for real.
+    isAutoPausing: boolean;
+    // Cancel the scheduled auto-resume and keep playback in its current state.
+    cancelAutoResume: () => void;
 }
 
 const defaultValue: NowPlayingContext = {
     skipToNext: () => undefined,
     userSelectedTrack: () => undefined,
-    timeLeft: null
+    timeLeft: null,
+    isAutoPausing: false,
+    cancelAutoResume: () => undefined
 }
 
 export const NowPlayingContext = createContext(defaultValue);
@@ -26,7 +41,7 @@ export const NowPlayingContext = createContext(defaultValue);
 export const NowPlayingContextProvider = (props: Props) => {
     const { playerState, remote } = useContext(AppContext);
     const { consumeNextInQueue, canSkipNext, currentTrack, setCurrentTrack } = useContext(QueueContext);
-    const { introSkipTime, autoSkipMode, autoSkipTime, pauseTime } = useContext(SettingsContext);
+    const { introSkipTime, outroSkipTime, autoSkipMode, autoSkipTime, pauseTime } = useContext(SettingsContext);
     const [timeLeft, setTimeLeft] = useState<number | null>(autoSkipTime);
     const [waiting, setWaiting] = useState(false);
     // Only whole seconds are ever displayed, so a 1s tick is enough. A faster
@@ -53,12 +68,44 @@ export const NowPlayingContextProvider = (props: Props) => {
     // once a playerState event reports this uri, so stale events for the track we
     // just left can't trigger a spurious auto-advance.
     const targetUriRef = useRef<string | null>(null);
+    // When the current transition started. Confirmation normally fires within a
+    // second; this is a fallback so a switch whose target uri is never echoed
+    // back (silent play failure, uri mismatch, dropped event) can't leave the
+    // guard stuck true and disable auto-advance forever.
+    const transitionStartRef = useRef<number>(0);
+    // True when the current countdown was shortened to stop at the track's outro
+    // buffer rather than running a full autoSkipTime. When such a countdown
+    // fires we've reached the dead tail of the track, so we advance to the next
+    // track regardless of mode instead of pausing into it.
+    const countdownCappedRef = useRef(false);
+    // The rest gap (Skip and Pause modes both pause for pauseTime before the
+    // next part starts). During it the now-playing button shows as playing so
+    // the instructor can keep it paused. A ref mirror lets the playerState
+    // effect read it without a stale closure.
+    const [isAutoPausing, setIsAutoPausing] = useState(false);
+    const isAutoPausingRef = useRef(false);
+    // Set when the instructor takes control during the gap (a play press on a
+    // remote, or a tap on the button) — the gap ends and the scheduled resume
+    // is skipped so playback stays paused.
+    const autoResumeCancelledRef = useRef(false);
+    const pauseHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pauseHoldResolveRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         if(!playerState) {
             return;
         }
+        const wasPaused = isPausedRef.current;
         isPausedRef.current = playerState.isPaused;
+        if(isAutoPausingRef.current && wasPaused && !playerState.isPaused) {
+            // Play was pressed during the rest gap (remote, headset, or the
+            // button). The instructor is taking control mid-instruction, so
+            // block the play (cancelAutoResume re-pauses) and cancel the
+            // scheduled auto-resume rather than letting the next part start. A
+            // second play press, with the gap now over, resumes normally.
+            cancelAutoResume();
+            return;
+        }
         if(playerState.isPaused) {
             if(endTimeRef.current !== null) {
                 pausedRemainingRef.current = Math.max(0, endTimeRef.current - Date.now());
@@ -73,11 +120,15 @@ export const NowPlayingContextProvider = (props: Props) => {
             setUpdateInterval(timerInterval);
         }
         if(isTransitioningRef.current) {
-            // Mid-switch. Clear the guard only when the device confirms our
-            // target track is the one now playing; trailing events for the
-            // previous track (uri != target) are ignored until then, so they
-            // can't be misread as a natural track change and skip ahead.
-            if(targetUriRef.current && playerState.track.uri === targetUriRef.current) {
+            // Mid-switch. Clear the guard once the device confirms our target
+            // track is the one now playing; trailing events for the previous
+            // track (uri != target) are ignored until then, so they can't be
+            // misread as a natural track change and skip ahead. The elapsed-time
+            // fallback recovers if the target uri is never echoed back, so the
+            // guard can't stay stuck and disable auto-advance permanently.
+            const confirmed = targetUriRef.current && playerState.track.uri === targetUriRef.current;
+            const timedOut = transitionStartRef.current > 0 && Date.now() - transitionStartRef.current > TRANSITION_GUARD_TIMEOUT;
+            if(confirmed || timedOut) {
                 isTransitioningRef.current = false;
             }
         } else if(currentTrack && currentTrack.uri != playerState.track.uri) {
@@ -102,9 +153,21 @@ export const NowPlayingContextProvider = (props: Props) => {
         }
     }, [timeLeft]);
 
-    const resetCountDown = () => {
+    const resetCountDown = (positionMs: number = 0, durationMs?: number) => {
         console.log('resetCountDown');
-        const total = autoSkipTime;
+        let total = autoSkipTime;
+        // Never let the countdown run into the track's final outroSkipTime: skip
+        // before the song's tail so the listener only ever hears playing song,
+        // not the fade-out/silence at the end. When the cap wins, flag it so the
+        // firing advances the track instead of pausing into the outro.
+        countdownCappedRef.current = false;
+        if(durationMs && durationMs > 0) {
+            const untilOutro = Math.max(durationMs - outroSkipTime - positionMs, 0);
+            if(untilOutro < total) {
+                total = untilOutro;
+                countdownCappedRef.current = true;
+            }
+        }
         if(isPausedRef.current) {
             // Playback is paused (manually, or by Pause mode). Don't start
             // ticking against wall-clock time — park the fresh countdown in the
@@ -123,13 +186,65 @@ export const NowPlayingContextProvider = (props: Props) => {
         setUpdateInterval(timerInterval);
     }
 
+    // Enter the rest gap: flag it (so the button shows as playing and a play
+    // press is treated as "take control"), then wait pauseTime. The wait can be
+    // ended early by cancelAutoResume so the instructor isn't kept waiting.
+    const holdPauseGap = async () => {
+        autoResumeCancelledRef.current = false;
+        isAutoPausingRef.current = true;
+        setIsAutoPausing(true);
+        await new Promise<void>(resolve => {
+            pauseHoldResolveRef.current = resolve;
+            pauseHoldTimerRef.current = setTimeout(resolve, pauseTime);
+        });
+        if(pauseHoldTimerRef.current) {
+            clearTimeout(pauseHoldTimerRef.current);
+            pauseHoldTimerRef.current = null;
+        }
+        pauseHoldResolveRef.current = null;
+        isAutoPausingRef.current = false;
+        setIsAutoPausing(false);
+    };
+
+    // Instructor took control during the rest gap. Block any play that slipped
+    // in (so the next part doesn't start), end the gap, and flag the cancel so
+    // the surrounding flow skips its scheduled resume — leaving playback paused
+    // until they press play again.
+    const cancelAutoResume = () => {
+        if(!isAutoPausingRef.current) {
+            return;
+        }
+        autoResumeCancelledRef.current = true;
+        isAutoPausingRef.current = false;
+        setIsAutoPausing(false);
+        if(pauseHoldResolveRef.current) {
+            pauseHoldResolveRef.current();
+        }
+        // We always end up paused. Re-pause only if playback actually slipped
+        // into playing (a remote/headset play press); an in-app tap acts on the
+        // already-paused track, so there's nothing to undo.
+        const slippedIntoPlaying = !isPausedRef.current;
+        isPausedRef.current = true;
+        if(slippedIntoPlaying) {
+            remote.pause().catch(err => console.error('cancelAutoResume pause failed', err));
+        }
+    };
+
     const onCountDownFinished = () => {
         console.log('onCountDownFinished');
         console.log('waiting',waiting);
         setUpdateInterval(null);
-        if(autoSkipMode == AutoSkipMode.Skip) {
+        if(autoSkipMode == AutoSkipMode.Off) {
+            // No auto-advance — let the track (outro included) play to its end.
+            return;
+        }
+        if(countdownCappedRef.current) {
+            // Reached the outro buffer: the playable part is over, so move on
+            // rather than pausing into the tail. Applies to Pause mode too.
             skipToNext(true);
-        } else if(autoSkipMode == AutoSkipMode.Pause) {
+        } else if(autoSkipMode == AutoSkipMode.Skip) {
+            skipToNext(true);
+        } else {
             pausePlayback();
         }
     }
@@ -150,13 +265,16 @@ export const NowPlayingContextProvider = (props: Props) => {
     const playTrack = async (item: TrackObject) => {
         console.log('playTrack',item.name);
         isTransitioningRef.current = true;
+        transitionStartRef.current = Date.now();
         targetUriRef.current = item.uri;
         setWaiting(true);
         setCurrentTrack(undefined);
         try {
             await remote.playUri(item.uri);
             setCurrentTrack(item);
-            resetCountDown();
+            // Manual play starts at 0 (no intro seek); cap the countdown against
+            // this track's length so a short track still skips before its outro.
+            resetCountDown(0, item.duration_ms);
             // Leave isTransitioningRef set; the playerState effect clears it once
             // the device confirms this track is playing. Clearing it here (before
             // Spotify emits its events) lets trailing old-track events trigger a
@@ -196,7 +314,11 @@ export const NowPlayingContextProvider = (props: Props) => {
         }
 
         isTransitioningRef.current = true;
+        transitionStartRef.current = Date.now();
         targetUriRef.current = nextItem.uri;
+        // Fresh skip: clear any stale cancel flag from a previous rest gap so a
+        // manual skip (which has no gap) still resumes.
+        autoResumeCancelledRef.current = false;
         setWaiting(true);
 
         try {
@@ -213,12 +335,20 @@ export const NowPlayingContextProvider = (props: Props) => {
             await new Promise(resolve => setTimeout(resolve, 50));
             await remote.seek(introSkipTime);
             setCurrentTrack(nextItem);
-            // Auto-skip holds a silent gap (pauseTime) before the next track
-            // actually starts; a manual skip resumes immediately.
+            // Auto-skip holds the rest gap (pauseTime) before the next track
+            // starts, so the instructor can talk and keep control; a manual skip
+            // starts immediately.
             if(pauseBeforeStart) {
-                await new Promise(resolve => setTimeout(resolve, pauseTime));
+                await holdPauseGap();
             }
-            await remote.resume();
+            // Start the next part only if the instructor didn't take control
+            // during the gap and playback is still paused. If they pressed play
+            // (cancelAutoResume re-paused it) the next track stays cued, paused,
+            // until they press play again.
+            const response = await remote.getPlayerState().catch(() => undefined);
+            if(!autoResumeCancelledRef.current && (!response || response.isPaused)) {
+                await remote.resume();
+            }
             // Leave isTransitioningRef set; the playerState effect clears it once
             // the device confirms this track is playing, so trailing old-track
             // events during the switch don't trigger a spurious auto-advance.
@@ -227,23 +357,25 @@ export const NowPlayingContextProvider = (props: Props) => {
             isTransitioningRef.current = false;
         }
 
-        resetCountDown();
+        // Playback starts at introSkipTime, so cap the countdown against the
+        // remaining song after the intro and before the outro buffer.
+        resetCountDown(introSkipTime, nextItem.duration_ms);
         setWaiting(false);
     }
 
     const pausePlayback = async () => {
-        // Pause mode: when the countdown ends, pause playback, hold for the
-        // configured pauseTime, then resume automatically.
+        // Pause mode: when the countdown ends, pause playback, hold the rest gap
+        // (pauseTime), then resume automatically.
         setWaiting(true);
         try {
             await remote.pause();
         } catch (err) {
             console.error('pause failed', err);
         }
-        await new Promise(resolve => setTimeout(resolve, pauseTime));
-        // The user may have resumed manually during the hold. Re-read the live
-        // state and only auto-resume if playback is still paused, so we don't
-        // fight a user who already pressed play.
+        await holdPauseGap();
+        // Re-read live state. Resume only if the instructor didn't take control
+        // during the gap (a play press is treated as "keep it paused", handled
+        // by cancelAutoResume) and playback is still paused.
         let response;
         try {
             response = await remote.getPlayerState();
@@ -251,7 +383,7 @@ export const NowPlayingContextProvider = (props: Props) => {
             console.error('pausePlayback getPlayerState failed', err);
         }
         const paused = response ? response.isPaused : isPausedRef.current;
-        if(paused) {
+        if(!autoResumeCancelledRef.current && paused) {
             try {
                 await remote.resume();
             } catch (err) {
@@ -259,9 +391,11 @@ export const NowPlayingContextProvider = (props: Props) => {
             }
         }
         // Re-arm the countdown so the pause repeats every autoSkipTime of
-        // playback. While paused resetCountDown parks the fresh countdown and
-        // the resume handler relaunches it once playback resumes.
-        resetCountDown();
+        // playback. Cap it against where we are in the track so that, as the
+        // song plays out across pause cycles, the countdown shortens and the
+        // final firing advances to the next track instead of pausing into the
+        // outro (see onCountDownFinished / countdownCappedRef).
+        resetCountDown(response ? response.playbackPosition : 0, response ? response.track.duration : undefined);
         setWaiting(false);
     }
 
@@ -270,7 +404,9 @@ export const NowPlayingContextProvider = (props: Props) => {
             value={{
                 skipToNext,
                 userSelectedTrack,
-                timeLeft
+                timeLeft,
+                isAutoPausing,
+                cancelAutoResume
             }}
         >
             {props.children}
